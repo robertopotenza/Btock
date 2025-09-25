@@ -2,8 +2,23 @@ const statusEl = document.getElementById('status');
 const contentEl = document.getElementById('content');
 const refreshButton = document.getElementById('refreshButton');
 const downloadButton = document.getElementById('downloadButton');
+const tickerLimitInput = document.getElementById('tickerLimit');
 
 let latestSnapshotIso = null;
+let currentLimit = null;
+
+const describeLimit = (limit) => {
+  if (limit === 'all') {
+    return 'all available tickers';
+  }
+
+  const parsed = Number(limit);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return `the first ${parsed} tickers`;
+  }
+
+  return 'the selected tickers';
+};
 
 const formatSnapshotDate = (isoString) => {
   if (!isoString) {
@@ -56,15 +71,63 @@ const setStatus = (message, type = 'info') => {
   statusEl.innerHTML = `<p class="${type === 'error' ? 'error' : ''}">${message}</p>`;
 };
 
-const renderContent = ({ html, fetchedAt, cached }) => {
+const applyTickerLimit = (html, limit) => {
+  if (!limit || limit === 'all') {
+    return html;
+  }
+
+  const limitValue = Number(limit);
+  if (!Number.isFinite(limitValue) || limitValue <= 0) {
+    return html;
+  }
+
+  try {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const tables = Array.from(template.content.querySelectorAll('table'));
+
+    if (!tables.length) {
+      return html;
+    }
+
+    let targetTbody = null;
+    let targetRows = [];
+
+    tables.forEach((table) => {
+      const tbody = table.querySelector('tbody');
+      if (!tbody) {
+        return;
+      }
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      if (rows.length > targetRows.length) {
+        targetRows = rows;
+        targetTbody = tbody;
+      }
+    });
+
+    if (!targetTbody || !targetRows.length) {
+      return html;
+    }
+
+    targetRows.slice(limitValue).forEach((row) => row.remove());
+
+    return template.innerHTML;
+  } catch (_error) {
+    return html;
+  }
+};
+
+const renderContent = ({ html, fetchedAt, cached }, limit) => {
   const safeHtml = enforceDynamicSnapshotDate(html, fetchedAt);
+  const limitedHtml = applyTickerLimit(safeHtml, limit);
   const { dateLabel, timeLabel } = formatSnapshotDate(fetchedAt);
   const cacheNote = cached ? ' (served from cache)' : '';
 
   latestSnapshotIso = fetchedAt || null;
 
   contentEl.innerHTML = `
-    <div class="table-wrapper">${safeHtml}</div>
+    <div class="table-wrapper">${limitedHtml}</div>
     <p class="footer-note">Data snapshot date: ${dateLabel} &mdash; ${timeLabel} local time${cacheNote}</p>
   `;
 };
@@ -75,35 +138,65 @@ const handleError = (error) => {
   contentEl.innerHTML = '';
 };
 
-const fetchData = async (forceRefresh = false) => {
-  setStatus('Fetching the latest Grok dashboard...');
+const fetchData = async ({ forceRefresh = false, limit } = {}) => {
+  if (!limit) {
+    return;
+  }
+
+  const limitDescription = describeLimit(limit);
+
+  setStatus(`Fetching the latest Grok dashboard for ${limitDescription}...`);
   contentEl.innerHTML = '';
   refreshButton.disabled = true;
   downloadButton.disabled = true;
+  tickerLimitInput.disabled = true;
   let encounteredError = false;
 
   try {
-    const query = forceRefresh ? '?refresh=true' : '';
-    const response = await fetch(`/api/dashboard${query}`);
+    const queryParams = new URLSearchParams();
+    if (forceRefresh) {
+      queryParams.set('refresh', 'true');
+    }
+
+    const query = queryParams.toString();
+    const response = await fetch(`/api/dashboard${query ? `?${query}` : ''}`);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(body.error || 'Unexpected error');
     }
 
     const data = await response.json();
-    setStatus('Dashboard loaded successfully.');
-    renderContent(data);
+    setStatus(`Dashboard loaded successfully for ${limitDescription}.`);
+    renderContent(data, limit);
   } catch (error) {
     encounteredError = true;
     latestSnapshotIso = null;
     handleError(error);
   } finally {
-    refreshButton.disabled = false;
+    refreshButton.disabled = !currentLimit;
     downloadButton.disabled = encounteredError || !latestSnapshotIso;
+    tickerLimitInput.disabled = false;
   }
 };
 
-refreshButton.addEventListener('click', () => fetchData(true));
+refreshButton.addEventListener('click', () => {
+  if (!currentLimit) {
+    setStatus('Please select how many tickers to display before refreshing.');
+    return;
+  }
+
+  fetchData({ forceRefresh: true, limit: currentLimit });
+});
+
+tickerLimitInput.addEventListener('change', (event) => {
+  const { value } = event.target;
+  if (!value) {
+    return;
+  }
+
+  currentLimit = value;
+  fetchData({ limit: currentLimit });
+});
 
 downloadButton.addEventListener('click', async () => {
   const fallbackDate = new Date().toISOString().split('T')[0];
@@ -136,5 +229,3 @@ downloadButton.addEventListener('click', async () => {
     downloadButton.disabled = false;
   }
 });
-
-fetchData();

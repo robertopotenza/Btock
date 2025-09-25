@@ -16,13 +16,24 @@
           </p>
         </div>
         <div class="actions">
-          <button id="refreshButton" class="button">Refresh data</button>
-          <button id="downloadButton" class="button button-secondary">Download Full Matrix (Excel)</button>
+          <div class="selection-control">
+            <label for="tickerLimit">Tickers to display</label>
+            <select id="tickerLimit" class="select">
+              <option value="" selected disabled>Select an option</option>
+              <option value="10">First 10</option>
+              <option value="50">First 50</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <button id="refreshButton" class="button" disabled>Refresh data</button>
+          <button id="downloadButton" class="button button-secondary" disabled>
+            Download Full Matrix (Excel)
+          </button>
         </div>
       </header>
 
       <section class="status" id="status">
-        <p>Loading dashboard data...</p>
+        <p>Select a ticker range to load the dashboard.</p>
       </section>
 
       <section class="content" id="content">
