@@ -199,14 +199,26 @@ tickerLimitInput.addEventListener('change', (event) => {
 });
 
 downloadButton.addEventListener('click', async () => {
+  if (!currentLimit) {
+    setStatus('Please select how many tickers to include before downloading the matrix.');
+    return;
+  }
+
   const fallbackDate = new Date().toISOString().split('T')[0];
   const { dateLabel } = formatSnapshotDate(latestSnapshotIso);
   const timestamp = dateLabel === 'Unknown' ? fallbackDate : dateLabel;
-  setStatus('Preparing the full dashboard matrix export...');
+  const limitDescription = describeLimit(currentLimit);
+  setStatus(`Preparing the dashboard matrix export for ${limitDescription}...`);
   downloadButton.disabled = true;
 
   try {
-    const response = await fetch('/api/dashboard/export');
+    const queryParams = new URLSearchParams();
+    if (currentLimit) {
+      queryParams.set('limit', currentLimit);
+    }
+
+    const query = queryParams.toString();
+    const response = await fetch(`/api/dashboard/export${query ? `?${query}` : ''}`);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(body.error || 'Unexpected error');
@@ -221,7 +233,7 @@ downloadButton.addEventListener('click', async () => {
     anchor.click();
     anchor.remove();
     window.URL.revokeObjectURL(url);
-    setStatus('Full dashboard matrix downloaded successfully.');
+    setStatus(`Dashboard matrix downloaded successfully for ${limitDescription}.`);
   } catch (error) {
     console.error('Failed to download dashboard export:', error);
     setStatus('Unable to download the full dashboard matrix. Please try again shortly.', 'error');
