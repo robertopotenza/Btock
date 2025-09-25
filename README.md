@@ -28,7 +28,7 @@ This project hosts a simple Express.js application that calls the Grok chat comp
    npm start
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) to view the dashboard. Use the **Refresh data** button to force a fresh Grok call.
+4. Open [http://localhost:3000](http://localhost:3000) to view the dashboard. Use the **Refresh data** button to force a fresh Grok call and the **Download Full Matrix (Excel)** button to export the complete dataset for offline analysis.
 
 ## Deployment on Railway
 
