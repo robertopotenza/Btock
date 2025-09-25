@@ -123,54 +123,62 @@ const getDashboardData = async ({ skipCache } = {}) => {
   return { payload, cached: false };
 };
 
+const extractPlainText = (cell) => {
+  if (cell === null || cell === undefined) {
+    return '';
+  }
+
+  if (typeof cell === 'string') {
+    return cell.trim();
+  }
+
+  if (typeof cell.text === 'string') {
+    return cell.text.trim();
+  }
+
+  if (Array.isArray(cell.tokens)) {
+    const text = cell.tokens
+      .map((token) => {
+        if (token.type === 'text' || token.type === 'escape' || token.type === 'codespan') {
+          return token.text || '';
+        }
+
+        if (token.type === 'link' || token.type === 'strong' || token.type === 'em' || token.type === 'del') {
+          return extractPlainText({ tokens: token.tokens || [], text: token.text });
+        }
+
+        if (token.type === 'space') {
+          return ' ';
+        }
+
+        if (token.type === 'br') {
+          return '\n';
+        }
+
+        return token.raw || '';
+      })
+      .join('');
+
+    return text.trim();
+  }
+
+  return String(cell).trim();
+};
+
 const parseMarkdownTable = (markdown) => {
   if (!markdown) {
     return { headers: [], rows: [] };
   }
 
-  const lines = markdown.split(/\r?\n/);
-  const tableLines = [];
-  let collecting = false;
+  const tokens = marked.lexer(markdown);
+  const tableToken = tokens.find((token) => token.type === 'table' && token.header?.length);
 
-  for (const line of lines) {
-    if (/^\s*\|/.test(line)) {
-      tableLines.push(line.trim());
-      collecting = true;
-      continue;
-    }
-
-    if (collecting) {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        break;
-      }
-
-      // If we encounter another section (e.g., markdown paragraph), stop collecting.
-      if (!/^\s*\|/.test(line)) {
-        break;
-      }
-    }
-  }
-
-  if (tableLines.length < 2) {
+  if (!tableToken) {
     return { headers: [], rows: [] };
   }
 
-  const [headerLine, ...rest] = tableLines;
-  const headers = headerLine
-    .split('|')
-    .slice(1, -1)
-    .map((cell) => cell.trim());
-
-  const rows = rest
-    .filter((line) => !/^\|?\s*[:-]+/.test(line.replace(/\s+/g, '')))
-    .map((line) =>
-      line
-        .split('|')
-        .slice(1, -1)
-        .map((cell) => cell.trim())
-    )
-    .filter((row) => row.length === headers.length);
+  const headers = tableToken.header.map((cell) => extractPlainText(cell));
+  const rows = tableToken.rows.map((row) => row.map((cell) => extractPlainText(cell)));
 
   return { headers, rows };
 };
