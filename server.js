@@ -17,6 +17,18 @@ let cachedAt = 0;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+const sanitizeApiKey = (apiKey) => {
+  if (!apiKey) {
+    return '';
+  }
+
+  // Remove all control characters (including newlines, carriage returns and tabs)
+  // as well as spaces, which are not allowed in HTTP header values.
+  return String(apiKey)
+    .trim()
+    .replace(/[^\x21-\x7E]+/g, '');
+};
+
 const loadPrompt = () => {
   const template = fs.readFileSync(PROMPT_PATH, 'utf-8');
   if (!template.trim()) {
@@ -53,6 +65,14 @@ app.get('/api/dashboard', async (req, res) => {
       });
     }
 
+    const sanitizedApiKey = sanitizeApiKey(apiKey);
+    if (!sanitizedApiKey) {
+      return res.status(500).json({
+        error:
+          'Grok API key is invalid. Ensure the grok_key environment variable only contains printable ASCII characters.'
+      });
+    }
+
     const prompt = loadPrompt();
 
     const requestBody = {
@@ -71,7 +91,7 @@ app.get('/api/dashboard', async (req, res) => {
     const response = await axios.post(GROK_API_URL, requestBody, {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
+        Authorization: `Bearer ${sanitizedApiKey}`
       },
       timeout: 1000 * 60 * 5
     });
