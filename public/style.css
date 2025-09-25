@@ -57,6 +57,34 @@ body {
 .actions {
   display: flex;
   gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.selection-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.selection-control label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.select {
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  padding: 0.65rem 1rem;
+  font-size: 1rem;
+  min-width: 160px;
+}
+
+.select:focus {
+  outline: 2px solid rgba(56, 189, 248, 0.55);
+  outline-offset: 2px;
 }
 
 .button {
@@ -165,6 +193,10 @@ body {
   .status,
   .content {
     padding: 1.25rem;
+  }
+
+  .actions {
+    align-items: stretch;
   }
 
   .button {
