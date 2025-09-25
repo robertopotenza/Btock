@@ -72,6 +72,19 @@ body {
   box-shadow: 0 12px 30px rgba(56, 189, 248, 0.25);
 }
 
+.button.button-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+.button.button-secondary:not(:disabled):hover {
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.65);
+}
+
 .button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
