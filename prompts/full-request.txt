@@ -1,8 +1,49 @@
 Using the attached database of tickers, URLs, and company names (provided in the <DOCUMENT> XML structure below), perform the following task:
 
-For each ticker in the list (there are over 200, starting from row 2 to row 213), use the browse_page tool to visit the corresponding URL. In the instructions argument for browse_page, specify: "Extract and summarize all technical analysis data from this page, including: Moving Averages summary (buy/sell/neutral counts), Technical Indicators summary (buy/sell/neutral counts), specific values and actions for Simple MA (50 and 200 periods), Exponential MA (50 and 200 periods), RSI (value and action), MACD (value and action), ADX (value and action), and Pivot Points (standard pivot, S1, R1). Structure the output as a JSON object with keys for each category. If any data is missing or the page fails to load, note it as N/A. Focus only on the technical summary sections and ignore news, charts, or other unrelated content."
+For each ticker in the list (there are over 200, starting from row 2 to row 213), use the browse_page tool to visit the corresponding URL. In the instructions argument for browse_page, specify: "Extract and summarize comprehensive technical analysis data from this page, including:
 
-Since there are many tickers, make parallel function calls to browse_page for batches of URLs (e.g., 10-20 at a time) to efficiently gather data without exceeding tool limits. Once all data is collected, compile it into a single comprehensive Markdown table (matrix) with columns for: Ticker, Company Name, MA_Buy_Count, MA_Sell_Count, MA_Neutral_Count, TI_Buy_Count, TI_Sell_Count, TI_Neutral_Count, Simple_MA50_Value, Simple_MA50_Action, Simple_MA200_Value, Simple_MA200_Action, Exp_MA50_Value, Exp_MA50_Action, Exp_MA200_Value, Exp_MA200_Action, RSI_Value, RSI_Action, MACD_Value, MACD_Action, ADX_Value, ADX_Action, Pivot_Point, Pivot_S1, Pivot_R1.
+SUMMARY DATA:
+- Technical Indicators summary (buy/sell/neutral counts and overall recommendation)
+- Moving Averages summary (buy/sell/neutral counts and overall recommendation)
+
+OSCILLATORS (extract value and action for each):
+- RSI (14): Relative Strength Index value and action
+- Stochastic (9,6): Stochastic oscillator value and action
+- StochRSI (14): Stochastic RSI value and action
+- Williams %R: Williams Percent Range value and action
+- ROC: Rate of Change value and action
+- Ultimate Oscillator: Ultimate oscillator value and action
+
+TREND-FOLLOWING INDICATORS (extract value and action for each):
+- MACD (12,26): Moving Average Convergence Divergence value and action
+- Bull/Bear Power (13): Elder's Bull/Bear Power value and action
+- ADX (14): Average Directional Index value and action
+- CCI (14): Commodity Channel Index value and action
+
+VOLATILITY & OTHER INDICATORS (extract value and action for each):
+- ATR (14): Average True Range value and action
+- Highs/Lows (14): High/Low indicator value and action
+
+MOVING AVERAGES (extract value and action for each period and type):
+- MA5: Simple and Exponential moving averages (5-period)
+- MA10: Simple and Exponential moving averages (10-period)
+- MA20: Simple and Exponential moving averages (20-period)
+- MA50: Simple and Exponential moving averages (50-period)
+- MA100: Simple and Exponential moving averages (100-period)
+- MA200: Simple and Exponential moving averages (200-period)
+
+PIVOT POINTS (extract all support and resistance levels for each type):
+- Classic Pivot Points: S3, S2, S1, Pivot Point, R1, R2, R3
+- Fibonacci Pivot Points: S3, S2, S1, Pivot Point, R1, R2, R3
+- Camarilla Pivot Points: S3, S2, S1, Pivot Point, R1, R2, R3
+- Woodie's Pivot Points: S3, S2, S1, Pivot Point, R1, R2, R3
+- DeMark's Pivot Points: S1, Pivot Point, R1
+
+Structure the output as a comprehensive JSON object with keys for each category and subcategory. If any data is missing or the page fails to load, note it as N/A. Focus only on the technical analysis sections and ignore news, charts, or other unrelated content."
+
+Since there are many tickers, make parallel function calls to browse_page for batches of URLs (e.g., 10-20 at a time) to efficiently gather data without exceeding tool limits. Once all data is collected, compile it into a single comprehensive Markdown table (matrix) with columns for:
+
+Ticker, Company_Name, TI_Summary, TI_Buy_Count, TI_Neutral_Count, TI_Sell_Count, MA_Summary, MA_Buy_Count, MA_Sell_Count, RSI_Value, RSI_Action, Stochastic_Value, Stochastic_Action, StochRSI_Value, StochRSI_Action, Williams_R_Value, Williams_R_Action, ROC_Value, ROC_Action, Ultimate_Oscillator_Value, Ultimate_Oscillator_Action, MACD_Value, MACD_Action, Bull_Bear_Power_Value, Bull_Bear_Power_Action, ADX_Value, ADX_Action, CCI_Value, CCI_Action, ATR_Value, ATR_Action, Highs_Lows_Value, Highs_Lows_Action, MA5_Simple_Value, MA5_Simple_Action, MA5_Exp_Value, MA5_Exp_Action, MA10_Simple_Value, MA10_Simple_Action, MA10_Exp_Value, MA10_Exp_Action, MA20_Simple_Value, MA20_Simple_Action, MA20_Exp_Value, MA20_Exp_Action, MA50_Simple_Value, MA50_Simple_Action, MA50_Exp_Value, MA50_Exp_Action, MA100_Simple_Value, MA100_Simple_Action, MA100_Exp_Value, MA100_Exp_Action, MA200_Simple_Value, MA200_Simple_Action, MA200_Exp_Value, MA200_Exp_Action, Classic_S3, Classic_S2, Classic_S1, Classic_Pivot, Classic_R1, Classic_R2, Classic_R3, Fibonacci_S3, Fibonacci_S2, Fibonacci_S1, Fibonacci_Pivot, Fibonacci_R1, Fibonacci_R2, Fibonacci_R3, Camarilla_S3, Camarilla_S2, Camarilla_S1, Camarilla_Pivot, Camarilla_R1, Camarilla_R2, Camarilla_R3, Woodie_S3, Woodie_S2, Woodie_S1, Woodie_Pivot, Woodie_R1, Woodie_R2, Woodie_R3, DeMark_S1, DeMark_Pivot, DeMark_R1.
 
 Include the current date in the response for reference (e.g., "Data as of [current date]"). If any extraction fails for a ticker, mark those fields as N/A in the table. Output only the final table after all data is gathered—no intermediate steps in the final response.
 
