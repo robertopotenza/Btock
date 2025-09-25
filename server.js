@@ -76,7 +76,7 @@ app.get('/api/dashboard', async (req, res) => {
     const prompt = loadPrompt();
 
     const requestBody = {
-      model: 'grok-beta',
+      model: process.env.GROK_MODEL || 'grok-3',
       messages: [
         {
           role: 'user',
