@@ -71,63 +71,18 @@ const setStatus = (message, type = 'info') => {
   statusEl.innerHTML = `<p class="${type === 'error' ? 'error' : ''}">${message}</p>`;
 };
 
-const applyTickerLimit = (html, limit) => {
-  if (!limit || limit === 'all') {
-    return html;
-  }
-
-  const limitValue = Number(limit);
-  if (!Number.isFinite(limitValue) || limitValue <= 0) {
-    return html;
-  }
-
-  try {
-    const template = document.createElement('template');
-    template.innerHTML = html;
-    const tables = Array.from(template.content.querySelectorAll('table'));
-
-    if (!tables.length) {
-      return html;
-    }
-
-    let targetTbody = null;
-    let targetRows = [];
-
-    tables.forEach((table) => {
-      const tbody = table.querySelector('tbody');
-      if (!tbody) {
-        return;
-      }
-
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      if (rows.length > targetRows.length) {
-        targetRows = rows;
-        targetTbody = tbody;
-      }
-    });
-
-    if (!targetTbody || !targetRows.length) {
-      return html;
-    }
-
-    targetRows.slice(limitValue).forEach((row) => row.remove());
-
-    return template.innerHTML;
-  } catch (_error) {
-    return html;
-  }
-};
+// applyTickerLimit function removed - backend now returns correctly sized data
 
 const renderContent = ({ html, fetchedAt, cached }, limit) => {
   const safeHtml = enforceDynamicSnapshotDate(html, fetchedAt);
-  const limitedHtml = applyTickerLimit(safeHtml, limit);
+  // No need to apply client-side ticker limit since backend returns correct data
   const { dateLabel, timeLabel } = formatSnapshotDate(fetchedAt);
   const cacheNote = cached ? ' (served from cache)' : '';
 
   latestSnapshotIso = fetchedAt || null;
 
   contentEl.innerHTML = `
-    <div class="table-wrapper">${limitedHtml}</div>
+    <div class="table-wrapper">${safeHtml}</div>
     <p class="footer-note">Data snapshot date: ${dateLabel} &mdash; ${timeLabel} local time${cacheNote}</p>
   `;
 };
@@ -156,6 +111,10 @@ const fetchData = async ({ forceRefresh = false, limit } = {}) => {
     const queryParams = new URLSearchParams();
     if (forceRefresh) {
       queryParams.set('refresh', 'true');
+    }
+    // Pass the limit parameter to the backend API
+    if (limit) {
+      queryParams.set('limit', limit);
     }
 
     const query = queryParams.toString();

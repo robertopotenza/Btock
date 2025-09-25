@@ -30,7 +30,7 @@ const sanitizeApiKey = (apiKey) => {
     .replace(/[^\x21-\x7E]+/g, '');
 };
 
-const loadPrompt = () => {
+const loadPrompt = (tickerLimit = null) => {
   const template = fs.readFileSync(PROMPT_PATH, 'utf-8');
   if (!template.trim()) {
     throw new Error('Prompt template is empty.');
@@ -41,14 +41,32 @@ const loadPrompt = () => {
     throw new Error('Ticker dataset is empty.');
   }
 
-  const [, ...rows] = dataRaw.split('\n');
+  const [header, ...allRows] = dataRaw.split('\n');
+  
+  // Apply ticker limit if specified
+  let rows = allRows;
+  if (tickerLimit && tickerLimit !== 'all') {
+    const limitValue = Number(tickerLimit);
+    if (Number.isFinite(limitValue) && limitValue > 0) {
+      rows = allRows.slice(0, limitValue);
+    }
+  }
+
   const sheetRows = rows
     .map((line, index) => `row${index + 2}: ${line}`)
     .join('\n\n');
 
-  const document = `<DOCUMENT filename="URL.xlsx">\n<SHEET id="0" name="URL-Ticker">row1: Ticker,URL,Company Name\n\n${sheetRows}\n</SHEET></DOCUMENT>`;
+  const document = `<DOCUMENT filename="URL.xlsx">\n<SHEET id="0" name="URL-Ticker">row1: ${header}\n\n${sheetRows}\n</SHEET></DOCUMENT>`;
 
-  return template.replace('{{DOCUMENT}}', document);
+  // Update the prompt to reflect the actual number of tickers being processed
+  const tickerCount = rows.length;
+  const endRow = tickerCount + 1; // +1 because we start from row 2
+  let updatedTemplate = template.replace(
+    /(there are over 200, starting from row 2 to row 213)/,
+    `there are ${tickerCount}, starting from row 2 to row ${endRow}`
+  );
+
+  return updatedTemplate.replace('{{DOCUMENT}}', document);
 };
 
 const getConfiguredApiKey = () => {
@@ -67,8 +85,8 @@ const getConfiguredApiKey = () => {
   return sanitizedApiKey;
 };
 
-const requestDashboardFromGrok = async () => {
-  const prompt = loadPrompt();
+const requestDashboardFromGrok = async (tickerLimit = null) => {
+  const prompt = loadPrompt(tickerLimit);
   const sanitizedApiKey = getConfiguredApiKey();
 
   const requestBody = {
@@ -113,13 +131,19 @@ const requestDashboardFromGrok = async () => {
   return cachedPayload;
 };
 
-const getDashboardData = async ({ skipCache } = {}) => {
-  const cacheIsFresh = cachedPayload && Date.now() - cachedAt < CACHE_TTL_MS;
+const getDashboardData = async ({ skipCache, tickerLimit } = {}) => {
+  // Cache key should include ticker limit to avoid serving wrong data
+  const cacheKey = tickerLimit || 'all';
+  const cacheIsFresh = cachedPayload && 
+                      cachedPayload.cacheKey === cacheKey && 
+                      Date.now() - cachedAt < CACHE_TTL_MS;
+  
   if (!skipCache && cacheIsFresh) {
     return { payload: cachedPayload, cached: true };
   }
 
-  const payload = await requestDashboardFromGrok();
+  const payload = await requestDashboardFromGrok(tickerLimit);
+  payload.cacheKey = cacheKey; // Store cache key with payload
   return { payload, cached: false };
 };
 
@@ -243,7 +267,8 @@ const normalizeTickerLimit = (value) => {
 app.get('/api/dashboard', async (req, res) => {
   try {
     const skipCache = String(req.query.refresh || 'false').toLowerCase() === 'true';
-    const { payload, cached } = await getDashboardData({ skipCache });
+    const tickerLimit = normalizeTickerLimit(req.query.limit);
+    const { payload, cached } = await getDashboardData({ skipCache, tickerLimit });
     return res.json({ ...payload, cached });
   } catch (error) {
     console.error('Error calling Grok API:', error?.response?.data || error.message || error);
@@ -260,7 +285,8 @@ app.get('/api/dashboard/export', async (req, res) => {
   try {
     const skipCache = String(req.query.refresh || 'false').toLowerCase() === 'true';
     const tickerLimit = normalizeTickerLimit(req.query.limit);
-    const { payload } = await getDashboardData({ skipCache });
+    // Use the same data source as the dashboard endpoint to ensure consistency
+    const { payload } = await getDashboardData({ skipCache, tickerLimit });
     const table = parseMarkdownTable(payload.raw);
 
     if (!table.headers.length || !table.rows.length) {
@@ -269,8 +295,8 @@ app.get('/api/dashboard/export', async (req, res) => {
         .json({ error: 'Unable to parse dashboard matrix for export. Please try refreshing the data.' });
     }
 
-    const limitedRows = typeof tickerLimit === 'number' ? table.rows.slice(0, tickerLimit) : table.rows;
-    const workbook = buildWorkbookFromTable({ headers: table.headers, rows: limitedRows });
+    // No need to limit rows again since getDashboardData already applied the limit
+    const workbook = buildWorkbookFromTable({ headers: table.headers, rows: table.rows });
     const snapshotDate = (() => {
       try {
         return new Date(payload.fetchedAt).toISOString().split('T')[0];
