@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Btock Technical Dashboard</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="header">
+        <div>
+          <h1>Btock Technical Analysis Dashboard</h1>
+          <p class="subtitle">
+            Aggregated technical indicators compiled by Grok using the Investing.com summaries.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="refreshButton" class="button">Refresh data</button>
+        </div>
+      </header>
+
+      <section class="status" id="status">
+        <p>Loading dashboard data...</p>
+      </section>
+
+      <section class="content" id="content">
+        <!-- Dashboard table will be injected here -->
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

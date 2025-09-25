@@ -1,0 +1,9 @@
+Using the attached database of tickers, URLs, and company names (provided in the <DOCUMENT> XML structure below), perform the following task:
+
+For each ticker in the list (there are over 200, starting from row 2 to row 213), use the browse_page tool to visit the corresponding URL. In the instructions argument for browse_page, specify: "Extract and summarize all technical analysis data from this page, including: Moving Averages summary (buy/sell/neutral counts), Technical Indicators summary (buy/sell/neutral counts), specific values and actions for Simple MA (50 and 200 periods), Exponential MA (50 and 200 periods), RSI (value and action), MACD (value and action), ADX (value and action), and Pivot Points (standard pivot, S1, R1). Structure the output as a JSON object with keys for each category. If any data is missing or the page fails to load, note it as N/A. Focus only on the technical summary sections and ignore news, charts, or other unrelated content."
+
+Since there are many tickers, make parallel function calls to browse_page for batches of URLs (e.g., 10-20 at a time) to efficiently gather data without exceeding tool limits. Once all data is collected, compile it into a single comprehensive Markdown table (matrix) with columns for: Ticker, Company Name, MA_Buy_Count, MA_Sell_Count, MA_Neutral_Count, TI_Buy_Count, TI_Sell_Count, TI_Neutral_Count, Simple_MA50_Value, Simple_MA50_Action, Simple_MA200_Value, Simple_MA200_Action, Exp_MA50_Value, Exp_MA50_Action, Exp_MA200_Value, Exp_MA200_Action, RSI_Value, RSI_Action, MACD_Value, MACD_Action, ADX_Value, ADX_Action, Pivot_Point, Pivot_S1, Pivot_R1.
+
+Include the current date in the response for reference (e.g., "Data as of [current date]"). If any extraction fails for a ticker, mark those fields as N/A in the table. Output only the final table after all data is gathered—no intermediate steps in the final response.
+
+{{DOCUMENT}}
