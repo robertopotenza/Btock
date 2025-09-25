@@ -218,6 +218,28 @@ const buildWorkbookFromTable = ({ headers, rows }) => {
   return workbook;
 };
 
+const normalizeTickerLimit = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.toLowerCase() === 'all') {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+};
+
 app.get('/api/dashboard', async (req, res) => {
   try {
     const skipCache = String(req.query.refresh || 'false').toLowerCase() === 'true';
@@ -237,6 +259,7 @@ app.get('/api/dashboard', async (req, res) => {
 app.get('/api/dashboard/export', async (req, res) => {
   try {
     const skipCache = String(req.query.refresh || 'false').toLowerCase() === 'true';
+    const tickerLimit = normalizeTickerLimit(req.query.limit);
     const { payload } = await getDashboardData({ skipCache });
     const table = parseMarkdownTable(payload.raw);
 
@@ -246,7 +269,8 @@ app.get('/api/dashboard/export', async (req, res) => {
         .json({ error: 'Unable to parse dashboard matrix for export. Please try refreshing the data.' });
     }
 
-    const workbook = buildWorkbookFromTable(table);
+    const limitedRows = typeof tickerLimit === 'number' ? table.rows.slice(0, tickerLimit) : table.rows;
+    const workbook = buildWorkbookFromTable({ headers: table.headers, rows: limitedRows });
     const snapshotDate = (() => {
       try {
         return new Date(payload.fetchedAt).toISOString().split('T')[0];
