@@ -98,6 +98,11 @@ const loadPrompt = (tickerLimit = null) => {
     }
   }
 
+  // Ensure rows is always a valid array (defensive programming)
+  if (!Array.isArray(rows)) {
+    rows = allRows;
+  }
+
   const sheetRows = rows
     .map((line, index) => `row${index + 2}: ${line}`)
     .join('\n\n');
