@@ -133,6 +133,8 @@ XAI_API_KEY=your_grok_api_key
 XAI_API_URL=https://api.x.ai/v1/chat/completions
 REDDIT_CLIENT_ID=your_reddit_client_id
 REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_USERNAME=your_reddit_username
+REDDIT_PASSWORD=your_reddit_password
 REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
 ```
 
@@ -179,6 +181,8 @@ export DATABASE_URL="postgresql://..."
 export XAI_API_KEY="your_key"
 export REDDIT_CLIENT_ID="your_id"
 export REDDIT_CLIENT_SECRET="your_secret"
+export REDDIT_USERNAME="your_username"
+export REDDIT_PASSWORD="your_password"
 
 # Run application
 streamlit run app.py

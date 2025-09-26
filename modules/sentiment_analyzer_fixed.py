@@ -32,13 +32,29 @@ class SentimentAnalyzer:
             
             # Reddit API setup
             self.reddit = None
-            if all([os.getenv("REDDIT_CLIENT_ID"), os.getenv("REDDIT_CLIENT_SECRET")]):
+            reddit_credentials = {
+                "REDDIT_CLIENT_ID": os.getenv("REDDIT_CLIENT_ID"),
+                "REDDIT_CLIENT_SECRET": os.getenv("REDDIT_CLIENT_SECRET"),
+                "REDDIT_USERNAME": os.getenv("REDDIT_USERNAME"),
+                "REDDIT_PASSWORD": os.getenv("REDDIT_PASSWORD"),
+            }
+            missing_credentials = [name for name, value in reddit_credentials.items() if not value]
+
+            if missing_credentials:
+                st.warning(
+                    "Reddit API setup failed: Missing credentials - "
+                    + ", ".join(missing_credentials)
+                )
+            else:
                 try:
                     self.reddit = praw.Reddit(
-                        client_id=os.getenv("REDDIT_CLIENT_ID"),
-                        client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+                        client_id=reddit_credentials["REDDIT_CLIENT_ID"],
+                        client_secret=reddit_credentials["REDDIT_CLIENT_SECRET"],
+                        username=reddit_credentials["REDDIT_USERNAME"],
+                        password=reddit_credentials["REDDIT_PASSWORD"],
                         user_agent=os.getenv("REDDIT_USER_AGENT", "Btock Sentiment Analyzer v1.0")
                     )
+                    self.reddit.read_only = True
                 except Exception as e:
                     st.warning(f"Reddit API setup failed: {str(e)}")
             
