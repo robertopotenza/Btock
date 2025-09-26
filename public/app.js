@@ -2,6 +2,7 @@ const statusEl = document.getElementById('status');
 const contentEl = document.getElementById('content');
 const refreshButton = document.getElementById('refreshButton');
 const downloadButton = document.getElementById('downloadButton');
+const downloadDatasetButton = document.getElementById('downloadDatasetButton');
 const tickerLimitInput = document.getElementById('tickerLimit');
 
 let latestSnapshotIso = null;
@@ -104,6 +105,7 @@ const fetchData = async ({ forceRefresh = false, limit } = {}) => {
   contentEl.innerHTML = '';
   refreshButton.disabled = true;
   downloadButton.disabled = true;
+  downloadDatasetButton.disabled = true;
   tickerLimitInput.disabled = true;
   let encounteredError = false;
 
@@ -134,6 +136,7 @@ const fetchData = async ({ forceRefresh = false, limit } = {}) => {
   } finally {
     refreshButton.disabled = !currentLimit;
     downloadButton.disabled = encounteredError || !latestSnapshotIso;
+    downloadDatasetButton.disabled = encounteredError || !latestSnapshotIso;
     tickerLimitInput.disabled = false;
   }
 };
@@ -198,5 +201,43 @@ downloadButton.addEventListener('click', async () => {
     setStatus('Unable to download the full dashboard matrix. Please try again shortly.', 'error');
   } finally {
     downloadButton.disabled = false;
+  }
+});
+
+downloadDatasetButton.addEventListener('click', async () => {
+  if (!latestSnapshotIso) {
+    setStatus('Load dashboard data before downloading the normalized dataset.');
+    return;
+  }
+
+  const fallbackDate = new Date().toISOString().split('T')[0];
+  const { dateLabel } = formatSnapshotDate(latestSnapshotIso);
+  const timestamp = dateLabel === 'Unknown' ? fallbackDate : dateLabel;
+
+  setStatus('Preparing the full normalized dataset export...');
+  downloadDatasetButton.disabled = true;
+
+  try {
+    const response = await fetch('/api/normalization/export/full-dataset');
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || 'Unexpected error');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `btock-normalized-dataset-${timestamp}.xlsx`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+    setStatus('Full normalized dataset downloaded successfully.');
+  } catch (error) {
+    console.error('Failed to download normalized dataset export:', error);
+    setStatus('Unable to download the normalized dataset. Please try again shortly.', 'error');
+  } finally {
+    downloadDatasetButton.disabled = false;
   }
 });

@@ -123,6 +123,22 @@ class NormalizationIntegration {
   }
 
   /**
+   * Retrieve the complete normalized dataset (raw + normalized columns)
+   */
+  async getFullNormalizedDataset(date = null) {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    try {
+      return await this.db.getFullNormalizedDataset(date);
+    } catch (error) {
+      console.error('Error retrieving full normalized dataset:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get top performing tickers based on overall score
    */
   async getTopPerformers(limit = 10, date = null) {

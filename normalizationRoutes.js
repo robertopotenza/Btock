@@ -196,6 +196,66 @@ router.get('/export/normalized', async (req, res) => {
   }
 });
 
+// Export the complete kpi_with_normalization dataset
+router.get('/export/full-dataset', async (req, res) => {
+  try {
+    const { date, format = 'excel' } = req.query;
+
+    if (!normalization) {
+      return res.status(500).json({ error: 'Normalization system not initialized' });
+    }
+
+    const data = await normalization.getFullNormalizedDataset(date);
+
+    if (format === 'json') {
+      return res.json({
+        success: true,
+        data,
+        count: data.length,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Full Normalized Dataset');
+
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      worksheet.columns = headers.map(header => ({ header, key: header }));
+
+      data.forEach(row => {
+        const formattedRow = {};
+        headers.forEach(header => {
+          formattedRow[header] = row[header];
+        });
+        worksheet.addRow(formattedRow);
+      });
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const dateSuffix = date || new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Disposition', `attachment; filename=normalized_dataset_${dateSuffix}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error exporting full normalized dataset:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Get normalization statistics
 router.get('/stats', async (req, res) => {
   try {
