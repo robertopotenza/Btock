@@ -463,13 +463,13 @@ def main():
             Analysis covers the last 1 year of trading data for comprehensive indicator calculation.
             """)
 
-    # Import and show embedded sentiment analysis (clean single-mode version)
+    # Import and show embedded sentiment analysis (production version with troubleshooting)
     try:
-        from embedded_sentiment_clean import show_embedded_sentiment_analysis
+        from embedded_sentiment_production import show_embedded_sentiment_analysis
         show_embedded_sentiment_analysis()
     except Exception as e:
         st.error(f"Error loading sentiment analysis: {e}")
-        st.info("Sentiment analysis is temporarily unavailable. You can use the standalone tool: `streamlit run sentiment_app.py`")
+        st.info("For troubleshooting help, check the SENTIMENT_TROUBLESHOOTING.md guide in the repository.")
 
 if __name__ == "__main__":
     main()
