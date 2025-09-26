@@ -32,14 +32,48 @@ class SentimentAnalyzer:
             
             # Reddit API setup
             self.reddit = None
-            if all([os.getenv("REDDIT_CLIENT_ID"), os.getenv("REDDIT_CLIENT_SECRET")]):
-                try:
-                    self.reddit = praw.Reddit(
-                        client_id=os.getenv("REDDIT_CLIENT_ID"),
-                        client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-                        user_agent=os.getenv("REDDIT_USER_AGENT", "Btock Sentiment Analyzer v1.0")
+            reddit_client_id = os.getenv("REDDIT_CLIENT_ID")
+            reddit_client_secret = os.getenv("REDDIT_CLIENT_SECRET")
+            reddit_user_agent = os.getenv("REDDIT_USER_AGENT")
+            reddit_username = os.getenv("REDDIT_USERNAME")
+            reddit_password = os.getenv("REDDIT_PASSWORD")
+
+            required_credentials = {
+                "REDDIT_CLIENT_ID": reddit_client_id,
+                "REDDIT_CLIENT_SECRET": reddit_client_secret,
+                "REDDIT_USER_AGENT": reddit_user_agent,
+            }
+            missing_required = [name for name, value in required_credentials.items() if not value]
+
+            if missing_required:
+                st.warning(
+                    "Reddit API setup failed: Missing credentials - "
+                    + ", ".join(missing_required)
+                )
+            else:
+                if (reddit_username and not reddit_password) or (reddit_password and not reddit_username):
+                    st.warning(
+                        "Reddit optional login incomplete: set both REDDIT_USERNAME and REDDIT_PASSWORD "
+                        "to enable authenticated access. Defaulting to read-only mode."
                     )
+
+                try:
+                    reddit_kwargs = {
+                        "client_id": reddit_client_id,
+                        "client_secret": reddit_client_secret,
+                        "user_agent": reddit_user_agent or "StockResearchBot/1.0",
+                    }
+
+                    if reddit_username and reddit_password:
+                        reddit_kwargs.update({
+                            "username": reddit_username,
+                            "password": reddit_password,
+                        })
+
+                    self.reddit = praw.Reddit(**reddit_kwargs)
+                    self.reddit.read_only = not (reddit_username and reddit_password)
                 except Exception as e:
+                    st.warning(f"Reddit API setup failed: {str(e)}")
                     self.reddit = None
             
             # StockTwits API (public, no key required)
