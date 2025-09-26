@@ -181,8 +181,12 @@ export DATABASE_URL="postgresql://..."
 export XAI_API_KEY="your_key"
 export REDDIT_CLIENT_ID="your_id"
 export REDDIT_CLIENT_SECRET="your_secret"
+export REDDIT_USER_AGENT="Btock Sentiment Analyzer v1.0"
+
+# Optional: provide these only if you need authenticated Reddit access
+# For 2FA accounts append the current code to the password (example: my-password:123456)
 export REDDIT_USERNAME="your_username"
-export REDDIT_PASSWORD="your_password"
+export REDDIT_PASSWORD="your_password_or_app_password"
 
 # Run application
 streamlit run app.py
