@@ -33,50 +33,79 @@ class SentimentAnalyzer:
             self.reddit = None
             reddit_client_id = os.getenv("REDDIT_CLIENT_ID")
             reddit_client_secret = os.getenv("REDDIT_CLIENT_SECRET")
-            reddit_user_agent = os.getenv("REDDIT_USER_AGENT")
-            reddit_username = os.getenv("REDDIT_USERNAME")
-            reddit_password = os.getenv("REDDIT_PASSWORD")
-
-            required_credentials = {
-                "REDDIT_CLIENT_ID": reddit_client_id,
-                "REDDIT_CLIENT_SECRET": reddit_client_secret,
-                "REDDIT_USER_AGENT": reddit_user_agent,
-            }
-            missing_required = [name for name, value in required_credentials.items() if not value]
-
-            if missing_required:
-                st.warning(
-                    "Reddit API setup failed: Missing credentials - "
-                    + ", ".join(missing_required)
-                )
-            else:
-                if (reddit_username and not reddit_password) or (reddit_password and not reddit_username):
-                    st.warning(
-                        "Reddit optional login incomplete: set both REDDIT_USERNAME and REDDIT_PASSWORD "
-                        "to enable authenticated access. Defaulting to read-only mode."
-                    )
-
+            
+            if reddit_client_id and reddit_client_secret:
                 try:
-                    reddit_kwargs = {
-                        "client_id": reddit_client_id,
-                        "client_secret": reddit_client_secret,
-                        "user_agent": reddit_user_agent or "StockResearchBot/1.0",
-                    }
+                    # Handle multiple possible user agent environment variable names
+                    user_agent = (
+                        os.getenv("REDDIT_USER_AGENT") or 
+                        os.getenv("user_agent") or 
+                        "StockResearchBot/1.0"
+                    )
+                    
+                    self.reddit = praw.Reddit(
+                        client_id=reddit_client_id,
+                        client_secret=reddit_client_secret,
+                        user_agent=user_agent
+                    )
+                    
+                    # Test Reddit connection with a simple, safe call
+                    try:
+                        # Use a more reliable test - just check if we can access Reddit
+                        test_subreddit = self.reddit.subreddit("announcements")
+                        # Get just one post to test authentication
+                        next(iter(test_subreddit.hot(limit=1)))
+                        print(f"✅ Reddit API connected successfully with user agent: {user_agent}")
+                    except Exception as test_e:
+                        # If test fails, provide specific guidance
+                        error_msg = str(test_e).lower()
+                        if "401" in error_msg or "unauthorized" in error_msg:
+                            guidance = """
+Reddit API 401 Error - Authentication Failed:
 
-                    if reddit_username and reddit_password:
-                        reddit_kwargs.update({
-                            "username": reddit_username,
-                            "password": reddit_password,
-                        })
+1. Verify Reddit App Configuration:
+   - Go to: https://www.reddit.com/prefs/apps
+   - Ensure app type is 'script' (not 'web app')
+   - Check Client ID and Secret are correct
 
-                    self.reddit = praw.Reddit(**reddit_kwargs)
-                    self.reddit.read_only = not (reddit_username and reddit_password)
+2. Current Credentials:
+   - Client ID: {}
+   - Secret: {} (first 10 chars)
+   - User Agent: {}
 
-                    # Test Reddit connection
-                    list(self.reddit.subreddit("test").hot(limit=1))
+3. Common Issues:
+   - App type must be 'script' for personal use
+   - Client ID is the string under your app name
+   - Client Secret is the longer string labeled 'secret'
+   - Make sure app is not suspended or restricted
+
+4. Fix Steps:
+   - Delete current Reddit app and create new one
+   - Choose 'script' type when creating
+   - Update environment variables with new credentials
+                            """.format(
+                                reddit_client_id,
+                                reddit_client_secret[:10] + "..." if len(reddit_client_secret) > 10 else reddit_client_secret,
+                                user_agent
+                            )
+                            print(guidance)
+                            if hasattr(st, 'error'):
+                                st.error("Reddit API Authentication Failed (401)")
+                                st.info("Check the console/logs for detailed troubleshooting steps.")
+                        else:
+                            print(f"Reddit API test failed: {test_e}")
+                            if hasattr(st, 'warning'):
+                                st.warning(f"Reddit API test failed: {test_e}")
+                        
+                        self.reddit = None
+                        
                 except Exception as e:
-                    st.warning(f"Reddit API setup failed: {str(e)}")
+                    print(f"Reddit API setup failed: {str(e)}")
+                    if hasattr(st, 'warning'):
+                        st.warning(f"Reddit API setup failed: {str(e)}")
                     self.reddit = None
+            else:
+                print("Reddit API credentials not found - set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET")
             
             # StockTwits API (public, no key required)
             self.stocktwits_base_url = "https://api.stocktwits.com/api/2"
@@ -148,7 +177,7 @@ class SentimentAnalyzer:
         # Set in Railway Dashboard → Variables
         REDDIT_CLIENT_ID=your_reddit_client_id
         REDDIT_CLIENT_SECRET=your_reddit_client_secret
-        REDDIT_USER_AGENT=StockResearchBot/1.0
+        REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
         ```
         - Create app at: https://www.reddit.com/prefs/apps
         - Choose "script" type application
