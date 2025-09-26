@@ -3,6 +3,7 @@ const contentEl = document.getElementById('content');
 const refreshButton = document.getElementById('refreshButton');
 const downloadButton = document.getElementById('downloadButton');
 const downloadDatasetButton = document.getElementById('downloadDatasetButton');
+const downloadTickerFormulaButton = document.getElementById('downloadTickerFormulaButton');
 const tickerLimitInput = document.getElementById('tickerLimit');
 
 let latestSnapshotIso = null;
@@ -106,6 +107,7 @@ const fetchData = async ({ forceRefresh = false, limit } = {}) => {
   refreshButton.disabled = true;
   downloadButton.disabled = true;
   downloadDatasetButton.disabled = true;
+  downloadTickerFormulaButton.disabled = true;
   tickerLimitInput.disabled = true;
   let encounteredError = false;
 
@@ -137,6 +139,7 @@ const fetchData = async ({ forceRefresh = false, limit } = {}) => {
     refreshButton.disabled = !currentLimit;
     downloadButton.disabled = encounteredError || !latestSnapshotIso;
     downloadDatasetButton.disabled = encounteredError || !latestSnapshotIso;
+    downloadTickerFormulaButton.disabled = encounteredError || !latestSnapshotIso;
     tickerLimitInput.disabled = false;
   }
 };
@@ -201,6 +204,50 @@ downloadButton.addEventListener('click', async () => {
     setStatus('Unable to download the full dashboard matrix. Please try again shortly.', 'error');
   } finally {
     downloadButton.disabled = false;
+  }
+});
+
+downloadTickerFormulaButton.addEventListener('click', async () => {
+  if (!currentLimit) {
+    setStatus('Please select how many tickers to include before downloading the matrix with ticker links.');
+    return;
+  }
+
+  const fallbackDate = new Date().toISOString().split('T')[0];
+  const { dateLabel } = formatSnapshotDate(latestSnapshotIso);
+  const timestamp = dateLabel === 'Unknown' ? fallbackDate : dateLabel;
+  const limitDescription = describeLimit(currentLimit);
+  setStatus(`Preparing the dashboard matrix with ticker links for ${limitDescription}...`);
+  downloadTickerFormulaButton.disabled = true;
+
+  try {
+    const queryParams = new URLSearchParams();
+    if (currentLimit) {
+      queryParams.set('limit', currentLimit);
+    }
+
+    const query = queryParams.toString();
+    const response = await fetch(`/api/dashboard/export-with-formulas${query ? `?${query}` : ''}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || 'Unexpected error');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `btock-dashboard-matrix-ticker-links-${timestamp}.xlsx`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+    setStatus(`Dashboard matrix with ticker links downloaded successfully for ${limitDescription}.`);
+  } catch (error) {
+    console.error('Failed to download dashboard export with ticker links:', error);
+    setStatus('Unable to download the dashboard matrix with ticker links. Please try again shortly.', 'error');
+  } finally {
+    downloadTickerFormulaButton.disabled = false;
   }
 });
 
