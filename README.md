@@ -55,11 +55,11 @@ flowchart TD
   A --> B4[Strength KPIs: ADX, CCI]
   A --> B5[Support/Resistance KPIs: Pivot Points - Classic, Fibonacci, Camarilla, Woodie, DeMark]
 
-  B1 --> C1[Normalize to -1..+1]
-  B2 --> C2[Normalize to -1..+1]
-  B3 --> C3[Normalize to -1..+1]
-  B4 --> C4[Normalize to -1..+1]
-  B5 --> C5[Normalize to -1..+1]
+  B1 --> C1[Normalize to range -1 to +1]
+  B2 --> C2[Normalize to range -1 to +1]
+  B3 --> C3[Normalize to range -1 to +1]
+  B4 --> C4[Normalize to range -1 to +1]
+  B5 --> C5[Normalize to range -1 to +1]
 
   C1 --> D1[Momentum Score = average of normalized KPIs]
   C2 --> D2[Trend Score = average of normalized KPIs]
@@ -67,7 +67,7 @@ flowchart TD
   C4 --> D4[Strength Score = average of normalized KPIs]
   C5 --> D5[Support/Resistance Score = average of normalized KPIs]
 
-  subgraph Weights (must sum to 1.0)
+  subgraph Weights - must sum to 1.0
     W1[Momentum weight wM]
     W2[Trend weight wT]
     W3[Volatility weight wV]
@@ -81,16 +81,16 @@ flowchart TD
   D4 --> E4[(wS × Strength)]
   D5 --> E5[(wP × Support/Res)]
 
-  E1 --> F[Final Weighted Score = sum of (w × category scores)]
+  E1 --> F[Final Weighted Score = sum of weighted category scores]
   E2 --> F
   E3 --> F
   E4 --> F
   E5 --> F
 
   F --> G{Decision}
-  G --> H1[BUY if Score > +0.5]
-  G --> H2[HOLD if -0.5 ≤ Score ≤ +0.5]
-  G --> H3[SELL if Score < -0.5]
+  G --> H1[BUY if Score greater than 0.5]
+  G --> H2[HOLD if Score between -0.5 and 0.5]
+  G --> H3[SELL if Score less than -0.5]
 
 ----
 🔧 Developer Notes
