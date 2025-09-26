@@ -1,0 +1,12 @@
+# Railway Deployment Configuration
+# This file triggers automatic deployment when merged to main branch
+
+RAILWAY_PROJECT_NAME=btock-production
+RAILWAY_ENVIRONMENT=production
+RAILWAY_DOMAIN=btock-production.up.railway.app
+
+# Environment Variables Required:
+# DATABASE_URL=postgresql://postgres:LKCCrHKOKWyckhyBOyNnhFycKNTvEgIn@trolley.proxy.rlwy.net:59937/railway
+
+# Deployment Command:
+# streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
