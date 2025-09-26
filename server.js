@@ -5,6 +5,7 @@ const fs = require('fs');
 const { marked } = require('marked');
 const ExcelJS = require('exceljs');
 const NormalizationIntegration = require('./normalizationIntegration');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
@@ -13,6 +14,41 @@ const GROK_API_URL = 'https://api.x.ai/v1/chat/completions';
 const CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
 const PROMPT_PATH = path.join(__dirname, 'prompts', 'full-request.txt');
 const DATA_PATH = path.join(__dirname, 'prompts', 'url_tickers.csv');
+
+const createPool = () => {
+  if (!process.env.DATABASE_URL) {
+    console.warn('DATABASE_URL is not configured. Skipping PostgreSQL initialization.');
+    return null;
+  }
+
+  return new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.PGSSLMODE === 'disable' ? false : { rejectUnauthorized: false }
+  });
+};
+
+const pool = createPool();
+
+const initializeDatabase = async () => {
+  if (!pool) {
+    return;
+  }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS stock_data (
+        id SERIAL PRIMARY KEY,
+        ticker TEXT,
+        data JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+  } catch (error) {
+    console.error('Failed to initialize PostgreSQL database:', error.message || error);
+  }
+};
+
+initializeDatabase();
 
 let cachedPayloads = new Map(); // Use Map to cache different ticker limits separately
 let cachedAt = 0;
@@ -135,6 +171,8 @@ const requestDashboardFromGrok = async (tickerLimit = null) => {
     fetchedAt: new Date().toISOString()
   };
 
+  await persistDashboardData(payload.raw);
+
   // Cache the payload with the specific ticker limit
   const cacheKey = tickerLimit || 'all';
   cachedPayloads.set(cacheKey, payload);
@@ -229,6 +267,52 @@ const parseMarkdownTable = (markdown) => {
   const rows = tableToken.rows.map((row) => row.map((cell) => extractPlainText(cell)));
 
   return { headers, rows };
+};
+
+const persistDashboardData = async (markdown) => {
+  if (!pool) {
+    return;
+  }
+
+  const table = parseMarkdownTable(markdown);
+  if (!table.headers.length || !table.rows.length) {
+    return;
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    await client.query('TRUNCATE TABLE stock_data');
+
+    const insertQuery = 'INSERT INTO stock_data (ticker, data) VALUES ($1, $2)';
+    const tickerHeaderIndex = table.headers.findIndex((header) => header.trim().toLowerCase() === 'ticker');
+
+    for (const row of table.rows) {
+      const record = {};
+      table.headers.forEach((header, index) => {
+        record[header] = row[index] ?? '';
+      });
+
+      const tickerValue = tickerHeaderIndex >= 0 ? row[tickerHeaderIndex] || null : row[0] || null;
+      await client.query(insertQuery, [tickerValue, record]);
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Failed to rollback PostgreSQL transaction:', rollbackError.message || rollbackError);
+      }
+    }
+    console.error('Failed to persist dashboard data:', error.message || error);
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
 };
 
 const buildWorkbookFromTable = ({ headers, rows }) => {
