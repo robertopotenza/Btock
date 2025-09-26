@@ -14,7 +14,7 @@ This guide helps you configure and troubleshoot the sentiment analysis feature t
 ### **Step 2: Identify Required APIs**
 The sentiment analysis uses three data sources:
 - **X (Twitter)** via Grok API - Requires XAI_API_KEY
-- **Reddit** - Requires REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET  
+- **Reddit** - Requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, and REDDIT_PASSWORD
 - **StockTwits** - Public API (no key required, but may have rate limits)
 
 ## 🔑 API Configuration Steps
@@ -56,6 +56,8 @@ XAI_API_URL=https://api.grok.x.ai/v1/chat/completions
 # In Railway Dashboard → Variables
 REDDIT_CLIENT_ID=your_reddit_client_id
 REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_USERNAME=your_reddit_username
+REDDIT_PASSWORD=your_reddit_password
 REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
 ```
 
@@ -80,6 +82,8 @@ REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
    XAI_API_KEY=your_key
    REDDIT_CLIENT_ID=your_id
    REDDIT_CLIENT_SECRET=your_secret
+   REDDIT_USERNAME=your_username
+   REDDIT_PASSWORD=your_password
    ```
 
 2. **Restart Application**
@@ -131,7 +135,9 @@ REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
    import praw
    reddit = praw.Reddit(
        client_id="your_client_id",
-       client_secret="your_client_secret", 
+       client_secret="your_client_secret",
+       username="your_username",
+       password="your_password",
        user_agent="test"
    )
    print(list(reddit.subreddit("test").hot(limit=1)))
