@@ -91,7 +91,7 @@ flowchart TD
   G --> H1[BUY if Score greater than 0.5]
   G --> H2[HOLD if Score between -0.5 and 0.5]
   G --> H3[SELL if Score less than -0.5]
-
+```
 ----
 🔧 Developer Notes
 
