@@ -1,7 +1,7 @@
 # 📊 Stock KPI Scoring Dashboard
 
 A web-based dashboard for evaluating stocks daily using multiple KPIs (RSI, MACD, ADX, ATR, Moving Averages, CCI, Stochastic, Williams %R, ROC, Ultimate Oscillator, and Pivot Points).  
-The app ranks tickers with a weighted scoring system and outputs **BUY / HOLD / SELL** signals.  
+The app ranks tickers with a weighted scoring system and outputs **BUY / HOLD / SELL** signals and a global score per ticker.
 
 Built with **Streamlit**, deployable on **Railway**.
 
