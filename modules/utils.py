@@ -5,6 +5,7 @@ Helper functions for file processing, data validation, and export
 
 import pandas as pd
 import streamlit as st
+import numpy as np
 import io
 from typing import List, Dict, Optional, Tuple
 import re
@@ -387,3 +388,152 @@ class DataFormatter:
         except Exception as e:
             st.error(f"Error creating summary stats: {str(e)}")
             return {}
+
+
+
+class ExcelExporter:
+    """Handles Excel file export with formatting"""
+    
+    @staticmethod
+    def export_results(df: pd.DataFrame, filename: str = "btock_analysis_results.xlsx") -> bytes:
+        """
+        Export results to Excel with formatting
+        
+        Args:
+            df: Results DataFrame
+            filename: Output filename
+            
+        Returns:
+            Excel file as bytes
+        """
+        try:
+            output = io.BytesIO()
+            
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name='Analysis Results', index=False)
+                
+                # Get the workbook and worksheet
+                workbook = writer.book
+                worksheet = writer.sheets['Analysis Results']
+                
+                # Add conditional formatting for signals
+                from openpyxl.styles import PatternFill
+                from openpyxl.formatting.rule import CellIsRule
+                
+                # Define colors for signals
+                buy_fill = PatternFill(start_color='90EE90', end_color='90EE90', fill_type='solid')  # Light green
+                hold_fill = PatternFill(start_color='FFFFE0', end_color='FFFFE0', fill_type='solid')  # Light yellow
+                sell_fill = PatternFill(start_color='FFB6C1', end_color='FFB6C1', fill_type='solid')  # Light red
+                
+                # Find the Signal column
+                signal_col = None
+                for col_num, col_name in enumerate(df.columns, 1):
+                    if 'Signal' in str(col_name):
+                        signal_col = col_num
+                        break
+                
+                if signal_col:
+                    # Apply conditional formatting
+                    worksheet.conditional_formatting.add(
+                        f'{chr(64 + signal_col)}2:{chr(64 + signal_col)}{len(df) + 1}',
+                        CellIsRule(operator='equal', formula=['"BUY"'], fill=buy_fill)
+                    )
+                    worksheet.conditional_formatting.add(
+                        f'{chr(64 + signal_col)}2:{chr(64 + signal_col)}{len(df) + 1}',
+                        CellIsRule(operator='equal', formula=['"HOLD"'], fill=hold_fill)
+                    )
+                    worksheet.conditional_formatting.add(
+                        f'{chr(64 + signal_col)}2:{chr(64 + signal_col)}{len(df) + 1}',
+                        CellIsRule(operator='equal', formula=['"SELL"'], fill=sell_fill)
+                    )
+                
+                # Auto-adjust column widths
+                for column in worksheet.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 50)
+                    worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            output.seek(0)
+            return output.getvalue()
+            
+        except Exception as e:
+            st.error(f"Error exporting to Excel: {str(e)}")
+            return b""
+
+
+class SummaryStats:
+    """Handles summary statistics creation and display"""
+    
+    @staticmethod
+    def create_summary(signal_counts: Dict, total_tickers: int, avg_score: float) -> Dict:
+        """
+        Create summary statistics
+        
+        Args:
+            signal_counts: Dictionary with signal counts
+            total_tickers: Total number of tickers analyzed
+            avg_score: Average weighted score
+            
+        Returns:
+            Summary statistics dictionary
+        """
+        try:
+            summary = {
+                'total_tickers': total_tickers,
+                'signal_distribution': signal_counts,
+                'average_score': avg_score,
+                'buy_percentage': (signal_counts.get('BUY', 0) / total_tickers * 100) if total_tickers > 0 else 0,
+                'hold_percentage': (signal_counts.get('HOLD', 0) / total_tickers * 100) if total_tickers > 0 else 0,
+                'sell_percentage': (signal_counts.get('SELL', 0) / total_tickers * 100) if total_tickers > 0 else 0
+            }
+            return summary
+            
+        except Exception as e:
+            st.error(f"Error creating summary: {str(e)}")
+            return {}
+    
+    @staticmethod
+    def display_summary(summary: Dict):
+        """
+        Display summary statistics in Streamlit
+        
+        Args:
+            summary: Summary statistics dictionary
+        """
+        try:
+            if not summary:
+                return
+            
+            st.subheader("📊 Analysis Summary")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Tickers", summary.get('total_tickers', 0))
+            
+            with col2:
+                st.metric("Average Score", f"{summary.get('average_score', 0):.2f}")
+            
+            with col3:
+                buy_count = summary.get('signal_distribution', {}).get('BUY', 0)
+                st.metric("BUY Signals", buy_count, delta=f"{summary.get('buy_percentage', 0):.1f}%")
+            
+            with col4:
+                sell_count = summary.get('signal_distribution', {}).get('SELL', 0)
+                st.metric("SELL Signals", sell_count, delta=f"{summary.get('sell_percentage', 0):.1f}%")
+            
+            # Signal distribution chart
+            if summary.get('signal_distribution'):
+                signal_data = summary['signal_distribution']
+                if any(signal_data.values()):
+                    st.bar_chart(signal_data)
+                    
+        except Exception as e:
+            st.error(f"Error displaying summary: {str(e)}")
