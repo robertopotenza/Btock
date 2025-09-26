@@ -1,0 +1,24 @@
+# Btock Stock Analysis Dashboard - Complete Requirements
+# Includes both KPI Scoring and Sentiment Analysis dependencies
+
+# Core dependencies
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
+yfinance>=0.2.18
+ta>=0.10.2
+
+# Database
+psycopg2-binary>=2.9.7
+
+# Excel export
+openpyxl>=3.1.2
+
+# Sentiment Analysis APIs
+requests>=2.31.0
+praw>=7.7.1  # Reddit API
+python-dotenv>=1.0.0  # Environment variables
+
+# Optional: Additional data processing
+beautifulsoup4>=4.12.2
+lxml>=4.9.3

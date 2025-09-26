@@ -168,7 +168,7 @@ def main():
         with col1:
             if kpi_results_available:
                 kpi_time = st.session_state.get('kpi_analysis_time', 'Unknown')
-                st.info(f"📈 **KPI Results Available**\nAnalyzed: {kpi_time}")
+                st.info(f"📈 **KPI Results Available**\nAnalyzed: {kmp_time}")
                 
                 if st.button("View KPI Results"):
                     st.dataframe(st.session_state['kpi_results'])
