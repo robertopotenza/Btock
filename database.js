@@ -212,10 +212,33 @@ class DatabaseManager {
     });
   }
 
+  // Get the complete kpi_with_normalization dataset
+  async getFullNormalizedDataset(date = null) {
+    let sql = 'SELECT * FROM kpi_with_normalization';
+    const params = [];
+
+    if (date) {
+      sql += ' WHERE fetch_date = ?';
+      params.push(date);
+    }
+
+    sql += ' ORDER BY fetch_time DESC';
+
+    return new Promise((resolve, reject) => {
+      this.db.all(sql, params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+
   // Get top performers by overall score
   async getTopPerformers(limit = 10, date = null) {
     let sql = `
-      SELECT ticker, company_name, overall_score, momentum_score, trend_score, 
+      SELECT ticker, company_name, overall_score, momentum_score, trend_score,
              volatility_score, strength_score, support_resistance_score, fetch_time
       FROM kpi_with_normalization 
       WHERE overall_score IS NOT NULL
