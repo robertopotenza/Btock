@@ -26,18 +26,35 @@ class DataParser {
       'RSI_Action': 'rsi_action',
       'Stochastic_Value': 'stochastic_value',
       'Stochastic_Action': 'stochastic_action',
+      'StochRSI_Value': 'stochrsi_value',
+      'StochRSI_Action': 'stochrsi_action',
       'Williams_R_Value': 'williams_r_value',
       'Williams_R_Action': 'williams_r_action',
-      
+      'ROC_Value': 'roc_value',
+      'ROC_Action': 'roc_action',
+      'Ultimate_Oscillator_Value': 'ultimate_oscillator_value',
+      'Ultimate_Oscillator_Action': 'ultimate_oscillator_action',
+
       // Trend indicators
       'MACD_Value': 'macd_value',
       'MACD_Action': 'macd_action',
+      'MACD_Signal': 'macd_signal',
+      'Bull_Bear_Power_Value': 'bull_bear_power_value',
+      'Bull_Bear_Power_Action': 'bull_bear_power_action',
       'ADX_Value': 'adx_value',
       'ADX_Action': 'adx_action',
       'CCI_Value': 'cci_value',
       'CCI_Action': 'cci_action',
-      
+
       // Moving averages
+      'MA5_Simple_Value': 'ma5_simple_value',
+      'MA5_Simple_Action': 'ma5_simple_action',
+      'MA5_Exp_Value': 'ma5_exp_value',
+      'MA5_Exp_Action': 'ma5_exp_action',
+      'MA10_Simple_Value': 'ma10_simple_value',
+      'MA10_Simple_Action': 'ma10_simple_action',
+      'MA10_Exp_Value': 'ma10_exp_value',
+      'MA10_Exp_Action': 'ma10_exp_action',
       'MA20_Simple_Value': 'ma20_simple_value',
       'MA20_Simple_Action': 'ma20_simple_action',
       'MA20_Exp_Value': 'ma20_exp_value',
@@ -46,20 +63,47 @@ class DataParser {
       'MA50_Simple_Action': 'ma50_simple_action',
       'MA50_Exp_Value': 'ma50_exp_value',
       'MA50_Exp_Action': 'ma50_exp_action',
+      'MA100_Simple_Value': 'ma100_simple_value',
+      'MA100_Simple_Action': 'ma100_simple_action',
+      'MA100_Exp_Value': 'ma100_exp_value',
+      'MA100_Exp_Action': 'ma100_exp_action',
       'MA200_Simple_Value': 'ma200_simple_value',
       'MA200_Simple_Action': 'ma200_simple_action',
       'MA200_Exp_Value': 'ma200_exp_value',
       'MA200_Exp_Action': 'ma200_exp_action',
-      
+
       // Pivot points
+      'Classic_S3': 'classic_s3',
       'Classic_S2': 'classic_s2',
       'Classic_S1': 'classic_s1',
       'Classic_Pivot': 'classic_pivot',
       'Classic_R1': 'classic_r1',
       'Classic_R2': 'classic_r2',
+      'Classic_R3': 'classic_r3',
+      'Fibonacci_S3': 'fibonacci_s3',
+      'Fibonacci_S2': 'fibonacci_s2',
       'Fibonacci_S1': 'fibonacci_s1',
       'Fibonacci_Pivot': 'fibonacci_pivot',
-      'Fibonacci_R1': 'fibonacci_r1'
+      'Fibonacci_R1': 'fibonacci_r1',
+      'Fibonacci_R2': 'fibonacci_r2',
+      'Fibonacci_R3': 'fibonacci_r3',
+      'Camarilla_S3': 'camarilla_s3',
+      'Camarilla_S2': 'camarilla_s2',
+      'Camarilla_S1': 'camarilla_s1',
+      'Camarilla_Pivot': 'camarilla_pivot',
+      'Camarilla_R1': 'camarilla_r1',
+      'Camarilla_R2': 'camarilla_r2',
+      'Camarilla_R3': 'camarilla_r3',
+      'Woodie_S3': 'woodie_s3',
+      'Woodie_S2': 'woodie_s2',
+      'Woodie_S1': 'woodie_s1',
+      'Woodie_Pivot': 'woodie_pivot',
+      'Woodie_R1': 'woodie_r1',
+      'Woodie_R2': 'woodie_r2',
+      'Woodie_R3': 'woodie_r3',
+      'DeMark_S1': 'demark_s1',
+      'DeMark_Pivot': 'demark_pivot',
+      'DeMark_R1': 'demark_r1'
     };
   }
 
@@ -174,6 +218,14 @@ class DataParser {
       atr_action: null,
       highs_lows_value: null,
       highs_lows_action: null,
+      ma5_simple_value: null,
+      ma5_simple_action: null,
+      ma5_exp_value: null,
+      ma5_exp_action: null,
+      ma10_simple_value: null,
+      ma10_simple_action: null,
+      ma10_exp_value: null,
+      ma10_exp_action: null,
       ma20_simple_value: null,
       ma20_simple_action: null,
       ma20_exp_value: null,
@@ -182,18 +234,45 @@ class DataParser {
       ma50_simple_action: null,
       ma50_exp_value: null,
       ma50_exp_action: null,
+      ma100_simple_value: null,
+      ma100_simple_action: null,
+      ma100_exp_value: null,
+      ma100_exp_action: null,
       ma200_simple_value: null,
       ma200_simple_action: null,
       ma200_exp_value: null,
       ma200_exp_action: null,
+      classic_s3: null,
       classic_s2: null,
       classic_s1: null,
       classic_pivot: null,
       classic_r1: null,
       classic_r2: null,
+      classic_r3: null,
+      fibonacci_s3: null,
+      fibonacci_s2: null,
       fibonacci_s1: null,
       fibonacci_pivot: null,
       fibonacci_r1: null,
+      fibonacci_r2: null,
+      fibonacci_r3: null,
+      camarilla_s3: null,
+      camarilla_s2: null,
+      camarilla_s1: null,
+      camarilla_pivot: null,
+      camarilla_r1: null,
+      camarilla_r2: null,
+      camarilla_r3: null,
+      woodie_s3: null,
+      woodie_s2: null,
+      woodie_s1: null,
+      woodie_pivot: null,
+      woodie_r1: null,
+      woodie_r2: null,
+      woodie_r3: null,
+      demark_s1: null,
+      demark_pivot: null,
+      demark_r1: null,
       current_price: null,
       high_14: null,
       low_14: null
@@ -208,9 +287,9 @@ class DataParser {
         // Clean up the value
         if (value === 'N/A' || value === '' || value === '-') {
           value = null;
-        } else if (fieldName.includes('_count') || fieldName.includes('_value') || 
-                   fieldName.includes('_s1') || fieldName.includes('_s2') || 
-                   fieldName.includes('_r1') || fieldName.includes('_r2') || 
+        } else if (fieldName.includes('_count') || fieldName.includes('_value') ||
+                   fieldName.includes('_s1') || fieldName.includes('_s2') || fieldName.includes('_s3') ||
+                   fieldName.includes('_r1') || fieldName.includes('_r2') || fieldName.includes('_r3') ||
                    fieldName.includes('_pivot')) {
           // Parse numeric values
           const numericValue = parseFloat(value);

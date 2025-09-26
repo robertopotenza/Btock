@@ -68,7 +68,8 @@ class NormalizationIntegration {
           const normalizedData = this.calculator.normalizeKpiData(kpiData);
           
           // Insert normalized data
-          await this.db.insertNormalization(kpiDataId, normalizedData);
+          const normalizationId = await this.db.insertNormalization(kpiDataId, normalizedData);
+          await this.db.upsertTickerCompositeScore(normalizationId, normalizedData);
           normalizedCount++;
 
           console.log(`Processed and normalized data for ${kpiData.ticker}`);

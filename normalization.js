@@ -184,32 +184,43 @@ class NormalizationCalculator {
    * Support/Resistance Indicators Normalization
    */
 
-  // Pivot (Classic): (Close - Pivot) / (R1 - S1)
-  normalizePivotClassic(close, pivot, r1, s1) {
+  // Generic pivot normalization helper
+  normalizePivotGeneric(close, pivot, r1, s1) {
     const closeValue = this.parseNumeric(close);
     const pivotValue = this.parseNumeric(pivot);
     const r1Value = this.parseNumeric(r1);
     const s1Value = this.parseNumeric(s1);
-    
+
     if (closeValue === null || pivotValue === null || r1Value === null || s1Value === null || (r1Value - s1Value) === 0) {
       return null;
     }
-    
+
     return (closeValue - pivotValue) / (r1Value - s1Value);
+  }
+
+  // Pivot (Classic): (Close - Pivot) / (R1 - S1)
+  normalizePivotClassic(close, pivot, r1, s1) {
+    return this.normalizePivotGeneric(close, pivot, r1, s1);
   }
 
   // Pivot (Fibonacci): (Close - FibPivot) / (FibR1 - FibS1)
   normalizePivotFibonacci(close, fibPivot, fibR1, fibS1) {
-    const closeValue = this.parseNumeric(close);
-    const pivotValue = this.parseNumeric(fibPivot);
-    const r1Value = this.parseNumeric(fibR1);
-    const s1Value = this.parseNumeric(fibS1);
-    
-    if (closeValue === null || pivotValue === null || r1Value === null || s1Value === null || (r1Value - s1Value) === 0) {
-      return null;
-    }
-    
-    return (closeValue - pivotValue) / (r1Value - s1Value);
+    return this.normalizePivotGeneric(close, fibPivot, fibR1, fibS1);
+  }
+
+  // Pivot (Camarilla): (Close - CamPivot) / (CamR1 - CamS1)
+  normalizePivotCamarilla(close, camPivot, camR1, camS1) {
+    return this.normalizePivotGeneric(close, camPivot, camR1, camS1);
+  }
+
+  // Pivot (Woodie): (Close - WoodiePivot) / (WoodieR1 - WoodieS1)
+  normalizePivotWoodie(close, woodiePivot, woodieR1, woodieS1) {
+    return this.normalizePivotGeneric(close, woodiePivot, woodieR1, woodieS1);
+  }
+
+  // Pivot (DeMark): (Close - DeMarkPivot) / (DeMarkR1 - DeMarkS1)
+  normalizePivotDeMark(close, demarkPivot, demarkR1, demarkS1) {
+    return this.normalizePivotGeneric(close, demarkPivot, demarkR1, demarkS1);
   }
 
   /**
@@ -237,9 +248,8 @@ class NormalizationCalculator {
   }
 
   // Calculate trend score from trend indicators
-  calculateTrendScore(macdNorm, ma20_50Norm, ma50_200Norm, ma20_200Norm, bullBearNorm) {
-    const scores = [macdNorm, ma20_50Norm, ma50_200Norm, ma20_200Norm, bullBearNorm];
-    return this.calculateAverage(scores);
+  calculateTrendScore(...trendValues) {
+    return this.calculateAverage(trendValues);
   }
 
   // Calculate volatility score from volatility indicators
@@ -255,9 +265,8 @@ class NormalizationCalculator {
   }
 
   // Calculate support/resistance score from pivot indicators
-  calculateSupportResistanceScore(pivotClassicNorm, pivotFibNorm) {
-    const scores = [pivotClassicNorm, pivotFibNorm];
-    return this.calculateAverage(scores);
+  calculateSupportResistanceScore(...pivotValues) {
+    return this.calculateAverage(pivotValues);
   }
 
   // Calculate overall score with weighted average
@@ -300,9 +309,13 @@ class NormalizationCalculator {
 
     // Trend normalization
     const macd_normalized = this.normalizeMacd(kpiData.macd_value, kpiData.macd_signal);
+    const ma_trend_5_10_normalized = this.normalizeMovingAverageTrend(kpiData.ma5_simple_value, kpiData.ma10_simple_value);
+    const ma_trend_10_20_normalized = this.normalizeMovingAverageTrend(kpiData.ma10_simple_value, kpiData.ma20_simple_value);
     const ma_trend_20_50_normalized = this.normalizeMovingAverageTrend(kpiData.ma20_simple_value, kpiData.ma50_simple_value);
-    const ma_trend_50_200_normalized = this.normalizeMovingAverageTrend(kpiData.ma50_simple_value, kpiData.ma200_simple_value);
+    const ma_trend_50_100_normalized = this.normalizeMovingAverageTrend(kpiData.ma50_simple_value, kpiData.ma100_simple_value);
+    const ma_trend_100_200_normalized = this.normalizeMovingAverageTrend(kpiData.ma100_simple_value, kpiData.ma200_simple_value);
     const ma_trend_20_200_normalized = this.normalizeMovingAverageTrend(kpiData.ma20_simple_value, kpiData.ma200_simple_value);
+    const ma_trend_50_200_normalized = this.normalizeMovingAverageTrend(kpiData.ma50_simple_value, kpiData.ma200_simple_value);
     const bull_bear_power_normalized = this.normalizeBullBearPower(kpiData.bull_bear_power_value, kpiData.atr_value);
 
     // Volatility normalization
@@ -316,6 +329,9 @@ class NormalizationCalculator {
     // Support/Resistance normalization
     const pivot_classic_normalized = this.normalizePivotClassic(currentPrice, kpiData.classic_pivot, kpiData.classic_r1, kpiData.classic_s1);
     const pivot_fibonacci_normalized = this.normalizePivotFibonacci(currentPrice, kpiData.fibonacci_pivot, kpiData.fibonacci_r1, kpiData.fibonacci_s1);
+    const pivot_camarilla_normalized = this.normalizePivotCamarilla(currentPrice, kpiData.camarilla_pivot, kpiData.camarilla_r1, kpiData.camarilla_s1);
+    const pivot_woodie_normalized = this.normalizePivotWoodie(currentPrice, kpiData.woodie_pivot, kpiData.woodie_r1, kpiData.woodie_s1);
+    const pivot_demark_normalized = this.normalizePivotDeMark(currentPrice, kpiData.demark_pivot, kpiData.demark_r1, kpiData.demark_s1);
 
     // Calculate composite scores
     const momentum_score = this.calculateMomentumScore(
@@ -324,13 +340,26 @@ class NormalizationCalculator {
     );
 
     const trend_score = this.calculateTrendScore(
-      macd_normalized, ma_trend_20_50_normalized, ma_trend_50_200_normalized,
-      ma_trend_20_200_normalized, bull_bear_power_normalized
+      macd_normalized,
+      ma_trend_5_10_normalized,
+      ma_trend_10_20_normalized,
+      ma_trend_20_50_normalized,
+      ma_trend_50_100_normalized,
+      ma_trend_100_200_normalized,
+      ma_trend_20_200_normalized,
+      ma_trend_50_200_normalized,
+      bull_bear_power_normalized
     );
 
     const volatility_score = this.calculateVolatilityScore(atr_normalized, highs_lows_normalized);
     const strength_score = this.calculateStrengthScore(adx_normalized, cci_normalized);
-    const support_resistance_score = this.calculateSupportResistanceScore(pivot_classic_normalized, pivot_fibonacci_normalized);
+    const support_resistance_score = this.calculateSupportResistanceScore(
+      pivot_classic_normalized,
+      pivot_fibonacci_normalized,
+      pivot_camarilla_normalized,
+      pivot_woodie_normalized,
+      pivot_demark_normalized
+    );
 
     const overall_score = this.calculateOverallScore(
       momentum_score, trend_score, volatility_score, strength_score, support_resistance_score
@@ -347,9 +376,13 @@ class NormalizationCalculator {
       roc_normalized,
       ultimate_oscillator_normalized,
       macd_normalized,
+      ma_trend_5_10_normalized,
+      ma_trend_10_20_normalized,
       ma_trend_20_50_normalized,
-      ma_trend_50_200_normalized,
       ma_trend_20_200_normalized,
+      ma_trend_50_100_normalized,
+      ma_trend_100_200_normalized,
+      ma_trend_50_200_normalized,
       bull_bear_power_normalized,
       atr_normalized,
       highs_lows_normalized,
@@ -357,6 +390,9 @@ class NormalizationCalculator {
       cci_normalized,
       pivot_classic_normalized,
       pivot_fibonacci_normalized,
+      pivot_camarilla_normalized,
+      pivot_woodie_normalized,
+      pivot_demark_normalized,
       momentum_score,
       trend_score,
       volatility_score,
