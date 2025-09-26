@@ -20,10 +20,13 @@ def show_embedded_sentiment_analysis():
         
         # Get top tickers
         if not results_df.empty and 'final_weighted_score' in results_df.columns:
-            # Filter out error results
-            valid_results = results_df[results_df['error_message'].isna() | (results_df['error_message'] == '')]
+            # Filter out error results (safely check if error_message column exists)
+            if 'error_message' in results_df.columns:
+                valid_results = results_df[results_df['error_message'].isna() | (results_df['error_message'] == '')]
+            else:
+                valid_results = results_df
             
-            if not valid_results.empty:
+            if not valid_results.empty and 'ticker' in valid_results.columns:
                 top_tickers = valid_results.nlargest(10, 'final_weighted_score')['ticker'].tolist()
                 
                 st.info(f"""
@@ -125,11 +128,15 @@ def show_embedded_sentiment_analysis():
                                 )
                             
                             with col2:
-                                # Combined analysis export
-                                if not valid_results.empty:
-                                    # Merge KPI and sentiment results
-                                    kpi_top = valid_results.nlargest(10, 'final_weighted_score')[['ticker', 'final_weighted_score', 'signal']]
-                                    combined = pd.merge(kpi_top, formatted_results, left_on='ticker', right_on='Ticker', how='left')
+                            # Combined analysis export
+                            if not valid_results.empty and all(col in valid_results.columns for col in ['ticker', 'final_weighted_score']):
+                                # Merge KPI and sentiment results
+                                kpi_columns = ['ticker', 'final_weighted_score']
+                                if 'signal' in valid_results.columns:
+                                    kpi_columns.append('signal')
+                                
+                                kpi_top = valid_results.nlargest(10, 'final_weighted_score')[kpi_columns]
+                                combined = pd.merge(kpi_top, formatted_results, left_on='ticker', right_on='Ticker', how='left')
                                     
                                     combined_csv = combined.to_csv(index=False)
                                     st.download_button(

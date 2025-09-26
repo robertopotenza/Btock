@@ -362,7 +362,7 @@ def main():
                 # Display interactive table
                 st.dataframe(
                     display_df,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Signal": st.column_config.TextColumn(
@@ -463,9 +463,13 @@ def main():
             Analysis covers the last 1 year of trading data for comprehensive indicator calculation.
             """)
 
-    # Import and show embedded sentiment analysis
-    from embedded_sentiment import show_embedded_sentiment_analysis
-    show_embedded_sentiment_analysis()
+    # Import and show embedded sentiment analysis (safe version)
+    try:
+        from embedded_sentiment_safe import show_embedded_sentiment_analysis
+        show_embedded_sentiment_analysis()
+    except Exception as e:
+        st.error(f"Error loading sentiment analysis: {e}")
+        st.info("Sentiment analysis is temporarily unavailable. You can use the standalone tool: `streamlit run sentiment_app.py`")
 
 if __name__ == "__main__":
     main()
