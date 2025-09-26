@@ -7,6 +7,7 @@ This project hosts a simple Express.js application that calls the Grok chat comp
 | Variable  | Description                                    |
 |-----------|------------------------------------------------|
 | `grok_key` | Grok API key (configured in Railway secrets). |
+| `DATABASE_URL` | PostgreSQL connection string provided by Railway. |
 
 ## Local development
 
@@ -29,6 +30,11 @@ This project hosts a simple Express.js application that calls the Grok chat comp
    ```
 
 4. Open [http://localhost:3000](http://localhost:3000) to view the dashboard. Use the **Refresh data** button to force a fresh Grok call and the **Download Full Matrix (Excel)** button to export the complete dataset for offline analysis.
+
+### Database integration
+
+- Add the `DATABASE_URL` connection string from Railway to your `.env` file when running locally. The server will automatically create a `stock_data` table (if it does not exist), clear it, and insert the most recent dataset each time Grok returns a new dashboard.
+- If `DATABASE_URL` is not provided, the application will skip database writes and continue to operate using in-memory caching only.
 
 ## Deployment on Railway
 
