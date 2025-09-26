@@ -18,6 +18,7 @@
    ```
    DATABASE_URL=postgresql://postgres:LKCCrHKOKWyckhyBOyNnhFycKNTvEgIn@trolley.proxy.rlwy.net:59937/railway
    ```
+   **Important**: Ensure no extra spaces in the connection string
 5. **Configure Domain**: `btock-production.up.railway.app`
 6. **Deploy**: Railway will automatically use our Procfile and configuration
 
