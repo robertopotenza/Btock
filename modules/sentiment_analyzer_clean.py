@@ -61,7 +61,7 @@ class SentimentAnalyzer:
                     reddit_kwargs = {
                         "client_id": reddit_client_id,
                         "client_secret": reddit_client_secret,
-                        "user_agent": reddit_user_agent or "Btock Sentiment Analyzer v1.0",
+                        "user_agent": reddit_user_agent or "StockResearchBot/1.0",
                     }
 
                     if reddit_username and reddit_password:

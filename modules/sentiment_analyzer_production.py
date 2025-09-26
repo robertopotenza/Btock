@@ -60,7 +60,7 @@ class SentimentAnalyzer:
                     reddit_kwargs = {
                         "client_id": reddit_client_id,
                         "client_secret": reddit_client_secret,
-                        "user_agent": reddit_user_agent or "Btock Sentiment Analyzer v1.0",
+                        "user_agent": reddit_user_agent or "StockResearchBot/1.0",
                     }
 
                     if reddit_username and reddit_password:
@@ -148,7 +148,7 @@ class SentimentAnalyzer:
         # Set in Railway Dashboard → Variables
         REDDIT_CLIENT_ID=your_reddit_client_id
         REDDIT_CLIENT_SECRET=your_reddit_client_secret
-        REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
+        REDDIT_USER_AGENT=StockResearchBot/1.0
         ```
         - Create app at: https://www.reddit.com/prefs/apps
         - Choose "script" type application
