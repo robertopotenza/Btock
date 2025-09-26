@@ -15,6 +15,8 @@ const CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
 const PROMPT_PATH = path.join(__dirname, 'prompts', 'full-request.txt');
 const DATA_PATH = path.join(__dirname, 'prompts', 'url_tickers.csv');
 
+let tickerUrlMapCache = null;
+
 const createPool = () => {
   if (!process.env.DATABASE_URL) {
     console.warn('DATABASE_URL is not configured. Skipping PostgreSQL initialization.');
@@ -111,6 +113,45 @@ const loadPrompt = (tickerLimit = null) => {
   );
 
   return updatedTemplate.replace('{{DOCUMENT}}', document);
+};
+
+const loadTickerUrlMap = () => {
+  if (tickerUrlMapCache) {
+    return tickerUrlMapCache;
+  }
+
+  tickerUrlMapCache = new Map();
+
+  try {
+    const csv = fs.readFileSync(DATA_PATH, 'utf-8');
+    const lines = csv.trim().split('\n');
+
+    lines.slice(1).forEach((line) => {
+      if (!line.trim()) {
+        return;
+      }
+
+      const parts = line.split(',');
+      if (parts.length < 2) {
+        return;
+      }
+
+      const [rawTicker, rawUrl, ...rawNameParts] = parts;
+      const ticker = (rawTicker || '').trim().toUpperCase();
+      const url = (rawUrl || '').trim();
+      const companyName = rawNameParts.length ? rawNameParts.join(',').trim() : null;
+
+      if (!ticker || !url) {
+        return;
+      }
+
+      tickerUrlMapCache.set(ticker, { url, companyName });
+    });
+  } catch (error) {
+    console.error('Failed to load ticker URL map:', error.message || error);
+  }
+
+  return tickerUrlMapCache;
 };
 
 const getConfiguredApiKey = () => {
@@ -315,19 +356,64 @@ const persistDashboardData = async (markdown) => {
   }
 };
 
-const buildWorkbookFromTable = ({ headers, rows }) => {
+const buildWorkbookFromTable = ({ headers, rows }, options = {}) => {
+  const { includeTickerFormula = false, tickerUrlMap = null } = options;
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Dashboard Matrix');
 
-  worksheet.columns = headers.map((header, index) => ({
-    header,
-    key: `col${index}`,
-    width: Math.min(Math.max(header.length + 2, 12), 40)
-  }));
+  const baseHeaders = Array.isArray(headers) ? [...headers] : [];
+  const tickerIndex = baseHeaders.findIndex(
+    (header) => String(header).trim().toLowerCase() === 'ticker'
+  );
+  let formulaColumnIndex = -1;
+
+  const effectiveHeaders = [...baseHeaders];
+  if (includeTickerFormula) {
+    formulaColumnIndex = tickerIndex >= 0 ? tickerIndex + 1 : effectiveHeaders.length;
+    effectiveHeaders.splice(formulaColumnIndex, 0, 'Ticker_Formula');
+  }
+
+  worksheet.columns = effectiveHeaders.map((header, index) => {
+    const headerText = header === undefined || header === null ? '' : String(header);
+    return {
+      header: headerText,
+      key: `col${index}`,
+      width: Math.min(Math.max(headerText.length + 2, 12), 40)
+    };
+  });
+
+  const escapeForFormula = (value) => String(value ?? '').replace(/"/g, '""');
+  const tickerMap = tickerUrlMap instanceof Map ? tickerUrlMap : null;
 
   rows.forEach((row) => {
-    const normalizedRow = headers.map((_, index) => row[index] ?? '');
-    worksheet.addRow(normalizedRow);
+    const normalizedRow = baseHeaders.map((_, index) => row[index] ?? '');
+    const extendedRow = [...normalizedRow];
+
+    if (includeTickerFormula) {
+      const insertIndex = formulaColumnIndex >= 0 ? formulaColumnIndex : extendedRow.length;
+      const tickerValue = tickerIndex >= 0 ? normalizedRow[tickerIndex] : normalizedRow[0];
+      extendedRow.splice(insertIndex, 0, tickerValue ?? '');
+      const worksheetRow = worksheet.addRow(extendedRow);
+
+      const cell = worksheetRow.getCell(insertIndex + 1);
+      const tickerKey = String(tickerValue || '').toUpperCase();
+      const urlEntry = tickerMap?.get(tickerKey);
+
+      if (tickerValue && urlEntry?.url) {
+        const safeUrl = escapeForFormula(urlEntry.url);
+        const safeTicker = escapeForFormula(tickerValue);
+        cell.value = {
+          formula: `HYPERLINK("${safeUrl}", "${safeTicker}")`,
+          result: tickerValue
+        };
+      } else {
+        cell.value = tickerValue ?? '';
+      }
+
+      return;
+    }
+
+    worksheet.addRow(extendedRow);
   });
 
   worksheet.getRow(1).font = { bold: true };
@@ -431,6 +517,57 @@ app.get('/api/dashboard/export', async (req, res) => {
       error?.response?.data?.error?.message ||
       error?.message ||
       'Unexpected error generating dashboard export';
+    if (!res.headersSent) {
+      res.status(status).json({ error: message });
+    }
+  }
+});
+
+app.get('/api/dashboard/export-with-formulas', async (req, res) => {
+  try {
+    const skipCache = String(req.query.refresh || 'false').toLowerCase() === 'true';
+    const tickerLimit = normalizeTickerLimit(req.query.limit);
+    const { payload } = await getDashboardData({ skipCache, tickerLimit });
+    const table = parseMarkdownTable(payload.raw);
+
+    if (!table.headers.length || !table.rows.length) {
+      return res
+        .status(500)
+        .json({ error: 'Unable to parse dashboard matrix for export. Please try refreshing the data.' });
+    }
+
+    const tickerUrlMap = loadTickerUrlMap();
+    const workbook = buildWorkbookFromTable(
+      { headers: table.headers, rows: table.rows },
+      { includeTickerFormula: true, tickerUrlMap }
+    );
+
+    const snapshotDate = (() => {
+      try {
+        return new Date(payload.fetchedAt).toISOString().split('T')[0];
+      } catch (_error) {
+        return new Date().toISOString().split('T')[0];
+      }
+    })();
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="btock-dashboard-matrix-ticker-links-${snapshotDate}.xlsx"`
+    );
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error generating dashboard export with ticker formulas:', error?.response?.data || error.message || error);
+    const status = error?.response?.status || 500;
+    const message =
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      'Unexpected error generating dashboard export with ticker formulas';
     if (!res.headersSent) {
       res.status(status).json({ error: message });
     }
