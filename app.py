@@ -463,9 +463,9 @@ def main():
             Analysis covers the last 1 year of trading data for comprehensive indicator calculation.
             """)
 
-    # Import and show embedded sentiment analysis (safe version)
+    # Import and show embedded sentiment analysis (clean single-mode version)
     try:
-        from embedded_sentiment_safe import show_embedded_sentiment_analysis
+        from embedded_sentiment_clean import show_embedded_sentiment_analysis
         show_embedded_sentiment_analysis()
     except Exception as e:
         st.error(f"Error loading sentiment analysis: {e}")
