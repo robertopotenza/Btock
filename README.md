@@ -17,6 +17,7 @@ Data is pulled from **Yahoo Finance** using the [`yfinance`](https://github.com/
   - Strength  
   - Support/Resistance  
 - Run analysis and view results in a live interactive table.
+- **Compare all tickers by their Final Weighted Score and display a sorted ranking directly in the dashboard.**
 - Download results as an **Excel file** with scores and signals.
 - Simple to deploy on **Railway** or run locally.
 
