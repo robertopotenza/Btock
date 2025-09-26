@@ -34,6 +34,7 @@ If you prefer nixpacks, the updated nixpacks.toml should work correctly.
 ```
 DATABASE_URL=postgresql://postgres:LKCCrHKOKWyckhyBOyNnhFycKNTvEgIn@trolley.proxy.rlwy.net:59937/railway
 ```
+**Important**: Ensure no extra spaces in the connection string
 
 ## Expected Result
 The application should now deploy successfully to:

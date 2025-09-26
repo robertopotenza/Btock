@@ -7,6 +7,7 @@ RAILWAY_DOMAIN=btock-production.up.railway.app
 
 # Environment Variables Required:
 # DATABASE_URL=postgresql://postgres:LKCCrHKOKWyckhyBOyNnhFycKNTvEgIn@trolley.proxy.rlwy.net:59937/railway
+# IMPORTANT: No extra spaces in the connection string!
 
 # Deployment Command:
 # streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
