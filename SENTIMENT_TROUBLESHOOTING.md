@@ -14,7 +14,7 @@ This guide helps you configure and troubleshoot the sentiment analysis feature t
 ### **Step 2: Identify Required APIs**
 The sentiment analysis uses three data sources:
 - **X (Twitter)** via Grok API - Requires XAI_API_KEY
-- **Reddit** - Requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, and REDDIT_PASSWORD
+- **Reddit** - Requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, and REDDIT_USER_AGENT (username/password optional for full login)
 - **StockTwits** - Public API (no key required, but may have rate limits)
 
 ## 🔑 API Configuration Steps
@@ -56,10 +56,14 @@ XAI_API_URL=https://api.grok.x.ai/v1/chat/completions
 # In Railway Dashboard → Variables
 REDDIT_CLIENT_ID=your_reddit_client_id
 REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
+
+# Optional if you want authenticated (non read-only) access
 REDDIT_USERNAME=your_reddit_username
 REDDIT_PASSWORD=your_reddit_password
-REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
 ```
+
+> 💡 **2FA accounts:** Append the current 2FA code to your password (e.g., `my-password:123456`) or create an app-specific password before setting `REDDIT_PASSWORD`.
 
 ### **StockTwits API**
 - No setup required (public API)
@@ -82,8 +86,11 @@ REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
    XAI_API_KEY=your_key
    REDDIT_CLIENT_ID=your_id
    REDDIT_CLIENT_SECRET=your_secret
+   REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
+
+   # Optional (only if you need authenticated Reddit access)
    REDDIT_USERNAME=your_username
-   REDDIT_PASSWORD=your_password
+   REDDIT_PASSWORD=your_password_or_app_password
    ```
 
 2. **Restart Application**
@@ -136,10 +143,18 @@ REDDIT_USER_AGENT=Btock Sentiment Analyzer v1.0
    reddit = praw.Reddit(
        client_id="your_client_id",
        client_secret="your_client_secret",
-       username="your_username",
-       password="your_password",
-       user_agent="test"
+       user_agent="test-agent",
    )
+
+   # Optional: enable authenticated access by providing username/password
+   # If your account uses 2FA, append the current code to the password (password:123456)
+   # reddit = praw.Reddit(
+   #     client_id="your_client_id",
+   #     client_secret="your_client_secret",
+   #     user_agent="test-agent",
+   #     username="your_username",
+   #     password="your_password_or_app_password",
+   # )
    print(list(reddit.subreddit("test").hot(limit=1)))
    ```
 
