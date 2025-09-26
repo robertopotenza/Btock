@@ -20,6 +20,7 @@ from modules.data_fetcher import DataFetcher
 from modules.indicators import TechnicalIndicators
 from modules.scoring import ScoringEngine
 from modules.utils import FileProcessor, WeightValidator, SessionManager, DataFormatter
+from modules.database_utils import DatabaseUtils
 
 # Page configuration
 st.set_page_config(
@@ -113,7 +114,10 @@ def save_to_database(conn, session_id: str, results: List[Dict], weights: Dict[s
         
         # Save ticker results
         for result in results:
-            cursor.execute("""
+            # Prepare result for database insertion
+            prepared_result = DatabaseUtils.prepare_result_for_database(result)
+            
+            DatabaseUtils.safe_database_insert(cursor, """
                 INSERT INTO ticker_results (
                     session_id, ticker, current_price, momentum_score, trend_score,
                     volatility_score, strength_score, support_resistance_score,
@@ -121,16 +125,16 @@ def save_to_database(conn, session_id: str, results: List[Dict], weights: Dict[s
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 session_id,
-                result.get('ticker', ''),
-                result.get('current_price'),
-                result.get('momentum_score'),
-                result.get('trend_score'),
-                result.get('volatility_score'),
-                result.get('strength_score'),
-                result.get('support_resistance_score'),
-                result.get('final_weighted_score'),
-                result.get('signal'),
-                result.get('error_message')
+                prepared_result.get('ticker', ''),
+                prepared_result.get('current_price'),
+                prepared_result.get('momentum_score'),
+                prepared_result.get('trend_score'),
+                prepared_result.get('volatility_score'),
+                prepared_result.get('strength_score'),
+                prepared_result.get('support_resistance_score'),
+                prepared_result.get('final_weighted_score'),
+                prepared_result.get('signal'),
+                prepared_result.get('error_message')
             ))
         
         conn.commit()
