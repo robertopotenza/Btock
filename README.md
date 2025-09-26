@@ -86,7 +86,22 @@ flowchart TD
   G --> H2[HOLD if -0.5 ≤ Score ≤ +0.5]
   G --> H3[SELL if Score < -0.5]
 ----
+🔧 Developer Notes
 
+Input file must contain a column named Ticker.
+Skip invalid tickers but keep them in the results with an “Error” message.
+Enforce or auto-normalize weights to sum = 1.0.
+Thresholds for BUY/HOLD/SELL should be configurable via dashboard.
+Output Excel should include:
+Ticker
+Current value/price
+Category Scores (Momentum, Trend, Volatility, Strength, Support/Resistance)
+Final Weighted Score
+Signal
+Show results in a sortable Streamlit table before download.
+Add a progress bar for large ticker lists (250+).
+Deployment on Railway with Procfile and requirements.txt.
+---
 ## 📦 Requirements
 - Python 3.9+
 - Libraries:
