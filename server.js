@@ -13,7 +13,7 @@ const CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
 const PROMPT_PATH = path.join(__dirname, 'prompts', 'full-request.txt');
 const DATA_PATH = path.join(__dirname, 'prompts', 'url_tickers.csv');
 
-let cachedPayload = null;
+let cachedPayloads = new Map(); // Use Map to cache different ticker limits separately
 let cachedAt = 0;
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -121,29 +121,30 @@ const requestDashboardFromGrok = async (tickerLimit = null) => {
 
   const html = marked.parse(content);
 
-  cachedPayload = {
+  const payload = {
     raw: content,
     html,
     fetchedAt: new Date().toISOString()
   };
+
+  // Cache the payload with the specific ticker limit
+  const cacheKey = tickerLimit || 'all';
+  cachedPayloads.set(cacheKey, payload);
   cachedAt = Date.now();
 
-  return cachedPayload;
+  return payload;
 };
 
 const getDashboardData = async ({ skipCache, tickerLimit } = {}) => {
-  // Cache key should include ticker limit to avoid serving wrong data
   const cacheKey = tickerLimit || 'all';
-  const cacheIsFresh = cachedPayload && 
-                      cachedPayload.cacheKey === cacheKey && 
-                      Date.now() - cachedAt < CACHE_TTL_MS;
+  const cachedPayload = cachedPayloads.get(cacheKey);
+  const cacheIsFresh = cachedPayload && Date.now() - cachedAt < CACHE_TTL_MS;
   
   if (!skipCache && cacheIsFresh) {
     return { payload: cachedPayload, cached: true };
   }
 
   const payload = await requestDashboardFromGrok(tickerLimit);
-  payload.cacheKey = cacheKey; // Store cache key with payload
   return { payload, cached: false };
 };
 
