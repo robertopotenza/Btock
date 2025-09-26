@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { marked } = require('marked');
 const ExcelJS = require('exceljs');
+const NormalizationIntegration = require('./normalizationIntegration');
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +17,14 @@ const DATA_PATH = path.join(__dirname, 'prompts', 'url_tickers.csv');
 let cachedPayloads = new Map(); // Use Map to cache different ticker limits separately
 let cachedAt = 0;
 
+// Initialize normalization system
+const normalization = new NormalizationIntegration();
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Initialize normalization routes
+const { initializeRoutes } = require('./normalizationRoutes');
+app.use('/api/normalization', initializeRoutes(normalization));
 
 const sanitizeApiKey = (apiKey) => {
   if (!apiKey) {
@@ -145,6 +153,21 @@ const getDashboardData = async ({ skipCache, tickerLimit } = {}) => {
   }
 
   const payload = await requestDashboardFromGrok(tickerLimit);
+  
+  // Process data through normalization system
+  try {
+    console.log('Processing data through normalization system...');
+    const normalizationResult = await normalization.processGrokResponse(payload, tickerLimit);
+    console.log(`Normalization completed: ${normalizationResult.normalized} records processed`);
+    
+    // Add normalization metadata to payload
+    payload.normalization = normalizationResult;
+  } catch (error) {
+    console.error('Normalization processing failed:', error.message);
+    // Continue without normalization if it fails
+    payload.normalization = { error: error.message };
+  }
+  
   return { payload, cached: false };
 };
 
