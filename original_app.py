@@ -463,29 +463,5 @@ def main():
             Analysis covers the last 1 year of trading data for comprehensive indicator calculation.
             """)
 
-    # Add link to sentiment analysis tool
-    st.markdown("---")
-    st.subheader("🔗 Additional Tools")
-    
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        st.info("""
-        **Want to add sentiment analysis to your results?**
-        
-        Use our Sentiment Scoring Dashboard to analyze social media sentiment 
-        (X/Twitter, Reddit, StockTwits) for your top-performing tickers.
-        """)
-    
-    with col2:
-        if st.button("🚀 Open Sentiment Tool"):
-            st.markdown("""
-            **Sentiment Analysis Tool Available**
-            
-            Run `streamlit run sentiment_app.py` to access the sentiment scoring dashboard.
-            
-            You can analyze sentiment for any ticker list or use the results from this KPI analysis.
-            """)
-
 if __name__ == "__main__":
     main()
