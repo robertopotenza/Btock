@@ -391,37 +391,36 @@ def main():
                     )
     
     with col2:
-        # Summary statistics
+        # Enhanced Summary Statistics
         if st.session_state.analysis_results:
-            st.subheader("📈 Summary Statistics")
+            from modules.utils import SummaryStats
             
-            summary = DataFormatter.create_summary_stats(st.session_state.analysis_results)
+            # Create enhanced summary data
+            results_df = pd.DataFrame(st.session_state.analysis_results)
             
-            if summary:
-                # Basic stats
-                st.metric("Total Analyzed", summary['total_analyzed'])
-                st.metric("Successful", summary['successful'])
-                st.metric("Errors", summary['errors'])
-                
-                # Signal distribution
-                if 'signal_distribution' in summary:
-                    st.markdown("**Signal Distribution:**")
-                    signals = summary['signal_distribution']
-                    
-                    col_buy, col_hold, col_sell = st.columns(3)
-                    with col_buy:
-                        st.metric("BUY", signals['BUY'])
-                    with col_hold:
-                        st.metric("HOLD", signals['HOLD'])
-                    with col_sell:
-                        st.metric("SELL", signals['SELL'])
-                
-                # Score statistics
-                if 'score_stats' in summary:
-                    st.markdown("**Score Statistics:**")
-                    stats = summary['score_stats']
-                    st.metric("Average Score", f"{stats['mean']:.4f}")
-                    st.metric("Score Range", f"{stats['min']:.4f} to {stats['max']:.4f}")
+            # Count signals
+            signal_counts = results_df['signal'].value_counts().to_dict()
+            total_tickers = len(results_df)
+            avg_score = results_df['final_score'].mean()
+            
+            # Calculate score range
+            min_score = results_df['final_score'].min()
+            max_score = results_df['final_score'].max()
+            score_range = f"{min_score:.4f} to {max_score:.4f}"
+            
+            # Create enhanced summary
+            enhanced_summary = {
+                'total_tickers': total_tickers,
+                'signal_distribution': signal_counts,
+                'average_score': avg_score,
+                'score_range': score_range,
+                'buy_percentage': (signal_counts.get('BUY', 0) / total_tickers * 100) if total_tickers > 0 else 0,
+                'hold_percentage': (signal_counts.get('HOLD', 0) / total_tickers * 100) if total_tickers > 0 else 0,
+                'sell_percentage': (signal_counts.get('SELL', 0) / total_tickers * 100) if total_tickers > 0 else 0
+            }
+            
+            # Display enhanced summary
+            SummaryStats.display_summary(enhanced_summary)
         
         # Information panel
         st.subheader("ℹ️ How It Works")
