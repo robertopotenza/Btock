@@ -359,21 +359,31 @@ def main():
             display_df = DataFormatter.format_results_for_display(st.session_state.analysis_results)
             
             if not display_df.empty:
-                # Display interactive table
+                # Display interactive table with horizontal scrolling
                 st.dataframe(
                     display_df,
-                    width='stretch',
+                    width=1200,  # Fixed width to force horizontal scrolling
+                    height=400,
                     hide_index=True,
                     column_config={
-                        "Signal": st.column_config.TextColumn(
-                            "Signal",
-                            help="BUY/HOLD/SELL recommendation"
-                        ),
+                        "Ticker": st.column_config.TextColumn("Ticker", width=80),
+                        "Current Price": st.column_config.TextColumn("Current Price", width=100),
                         "Final Score": st.column_config.NumberColumn(
                             "Final Score",
                             help="Weighted score (-1 to +1)",
-                            format="%.4f"
-                        )
+                            format="%.4f",
+                            width=100
+                        ),
+                        "Signal": st.column_config.TextColumn(
+                            "Signal",
+                            help="BUY/HOLD/SELL recommendation",
+                            width=80
+                        ),
+                        "Momentum": st.column_config.NumberColumn("Momentum", width=100),
+                        "Trend": st.column_config.NumberColumn("Trend", width=100),
+                        "Volatility": st.column_config.NumberColumn("Volatility", width=100),
+                        "Strength": st.column_config.NumberColumn("Strength", width=100),
+                        "Support/Resistance": st.column_config.NumberColumn("Support/Resistance", width=120)
                     }
                 )
                 

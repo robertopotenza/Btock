@@ -50,18 +50,38 @@ def show_embedded_sentiment_analysis():
                         """)
                         
                         # Sentiment analysis controls
-                        col1, col2 = st.columns([2, 1])
+                        col1, col2, col3 = st.columns([2, 1, 1])
                         
                         with col1:
+                            # Initialize session state for selected tickers if not exists
+                            if 'sentiment_selected_tickers' not in st.session_state:
+                                st.session_state.sentiment_selected_tickers = top_tickers[:5] if len(top_tickers) >= 5 else top_tickers
+                            
                             # Allow user to modify the ticker list
                             selected_tickers = st.multiselect(
                                 "Select tickers for sentiment analysis:",
                                 options=top_tickers,
-                                default=top_tickers[:5] if len(top_tickers) >= 5 else top_tickers,
+                                default=st.session_state.sentiment_selected_tickers,
                                 help="Choose which tickers to analyze for social media sentiment"
                             )
                         
                         with col2:
+                            # Top N selection
+                            top_n_option = st.selectbox(
+                                "Quick select:",
+                                options=[5, 10, 20],
+                                index=0,
+                                help="Quickly select top N performers"
+                            )
+                            
+                            # Button to apply top N selection
+                            if st.button("Select Top " + str(top_n_option), key="select_top_n"):
+                                # Update the multiselect with top N tickers
+                                selected_top_tickers = top_tickers[:top_n_option] if len(top_tickers) >= top_n_option else top_tickers
+                                st.session_state.sentiment_selected_tickers = selected_top_tickers
+                                st.rerun()
+                        
+                        with col3:
                             # Time range selection
                             hours_back = st.selectbox(
                                 "Analysis time range:",
