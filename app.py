@@ -359,11 +359,13 @@ def main():
             display_df = DataFormatter.format_results_for_display(st.session_state.analysis_results)
             
             if not display_df.empty:
-                # Display interactive table
+                # Display interactive table with horizontal scrolling
                 st.dataframe(
                     display_df,
                     width='stretch',
+                    height=400,
                     hide_index=True,
+                    use_container_width=False,
                     column_config={
                         "Signal": st.column_config.TextColumn(
                             "Signal",
