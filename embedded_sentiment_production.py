@@ -56,14 +56,21 @@ def show_embedded_sentiment_analysis():
                             # Initialize session state for selected tickers if not exists
                             if 'sentiment_selected_tickers' not in st.session_state:
                                 st.session_state.sentiment_selected_tickers = top_tickers[:5] if len(top_tickers) >= 5 else top_tickers
-                            
-                            # Allow user to modify the ticker list
-                            selected_tickers = st.multiselect(
+
+                            # Ensure the stored selection always matches available options
+                            st.session_state.sentiment_selected_tickers = [
+                                ticker for ticker in st.session_state.sentiment_selected_tickers if ticker in top_tickers
+                            ] or (top_tickers[:5] if len(top_tickers) >= 5 else top_tickers)
+
+                            # Allow user to modify the ticker list and keep state in sync
+                            st.multiselect(
                                 "Select tickers for sentiment analysis:",
                                 options=top_tickers,
-                                default=st.session_state.sentiment_selected_tickers,
+                                key="sentiment_selected_tickers",
                                 help="Choose which tickers to analyze for social media sentiment"
                             )
+
+                            selected_tickers = st.session_state.sentiment_selected_tickers
                         
                         with col2:
                             # Top N selection
