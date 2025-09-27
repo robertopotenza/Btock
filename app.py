@@ -401,11 +401,11 @@ def main():
             # Count signals
             signal_counts = results_df['signal'].value_counts().to_dict()
             total_tickers = len(results_df)
-            avg_score = results_df['final_score'].mean()
+            avg_score = results_df['final_weighted_score'].mean()
             
             # Calculate score range
-            min_score = results_df['final_score'].min()
-            max_score = results_df['final_score'].max()
+            min_score = results_df['final_weighted_score'].min()
+            max_score = results_df['final_weighted_score'].max()
             score_range = f"{min_score:.4f} to {max_score:.4f}"
             
             # Create enhanced summary
