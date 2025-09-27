@@ -502,7 +502,7 @@ class SummaryStats:
     @staticmethod
     def display_summary(summary: Dict):
         """
-        Display summary statistics in Streamlit
+        Display enhanced summary statistics in Streamlit with beautiful design
         
         Args:
             summary: Summary statistics dictionary
@@ -511,29 +511,224 @@ class SummaryStats:
             if not summary:
                 return
             
-            st.subheader("📊 Analysis Summary")
+            # Enhanced header with custom styling
+            st.markdown("""
+            <div style="
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                padding: 1rem;
+                border-radius: 10px;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            ">
+                <h2 style="
+                    color: white;
+                    margin: 0;
+                    text-align: center;
+                    font-weight: 600;
+                    font-size: 1.5rem;
+                ">📊 Summary Statistics</h2>
+            </div>
+            """, unsafe_allow_html=True)
             
-            col1, col2, col3, col4 = st.columns(4)
+            # Get values
+            total_tickers = summary.get('total_tickers', 0)
+            successful = summary.get('signal_distribution', {})
+            errors = total_tickers - sum(successful.values()) if total_tickers > 0 else 0
+            avg_score = summary.get('average_score', 0)
+            
+            # Calculate score range
+            if 'score_range' in summary:
+                score_range = summary['score_range']
+            else:
+                score_range = "N/A"
+            
+            # Top metrics row with enhanced styling
+            col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.metric("Total Tickers", summary.get('total_tickers', 0))
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 1.5rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Total Analyzed</h3>
+                    <h1 style="margin: 0.5rem 0 0 0; font-size: 2.5rem; font-weight: 700;">{}</h1>
+                </div>
+                """.format(total_tickers), unsafe_allow_html=True)
             
             with col2:
-                st.metric("Average Score", f"{summary.get('average_score', 0):.2f}")
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                    padding: 1.5rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 8px 16px rgba(17, 153, 142, 0.3);
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Successful</h3>
+                    <h1 style="margin: 0.5rem 0 0 0; font-size: 2.5rem; font-weight: 700;">{}</h1>
+                </div>
+                """.format(sum(successful.values())), unsafe_allow_html=True)
             
             with col3:
-                buy_count = summary.get('signal_distribution', {}).get('BUY', 0)
-                st.metric("BUY Signals", buy_count, delta=f"{summary.get('buy_percentage', 0):.1f}%")
+                error_color = "#e74c3c" if errors > 0 else "#95a5a6"
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, {} 0%, {} 100%);
+                    padding: 1.5rem;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 8px 16px rgba(231, 76, 60, 0.3);
+                    margin-bottom: 1rem;
+                ">
+                    <h3 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Errors</h3>
+                    <h1 style="margin: 0.5rem 0 0 0; font-size: 2.5rem; font-weight: 700;">{}</h1>
+                </div>
+                """.format(error_color, error_color, errors), unsafe_allow_html=True)
             
-            with col4:
-                sell_count = summary.get('signal_distribution', {}).get('SELL', 0)
-                st.metric("SELL Signals", sell_count, delta=f"{summary.get('sell_percentage', 0):.1f}%")
+            # Signal Distribution with enhanced cards
+            st.markdown("""
+            <div style="
+                background: #f8f9fa;
+                padding: 1.5rem;
+                border-radius: 15px;
+                margin: 1.5rem 0;
+                border: 1px solid #e9ecef;
+            ">
+                <h3 style="
+                    color: #495057;
+                    margin: 0 0 1rem 0;
+                    font-weight: 600;
+                    text-align: center;
+                ">Signal Distribution:</h3>
+            """, unsafe_allow_html=True)
             
-            # Signal distribution chart
+            # Signal cards
+            col1, col2, col3 = st.columns(3)
+            
+            buy_count = successful.get('BUY', 0)
+            hold_count = successful.get('HOLD', 0)
+            sell_count = successful.get('SELL', 0)
+            
+            with col1:
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3);
+                ">
+                    <h4 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">BUY</h4>
+                    <h2 style="margin: 0.5rem 0 0 0; font-size: 2rem; font-weight: 700;">{}</h2>
+                </div>
+                """.format(buy_count), unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 6px 12px rgba(243, 156, 18, 0.3);
+                ">
+                    <h4 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">HOLD</h4>
+                    <h2 style="margin: 0.5rem 0 0 0; font-size: 2rem; font-weight: 700;">{}</h2>
+                </div>
+                """.format(hold_count), unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown("""
+                <div style="
+                    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
+                ">
+                    <h4 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">SELL</h4>
+                    <h2 style="margin: 0.5rem 0 0 0; font-size: 2rem; font-weight: 700;">{}</h2>
+                </div>
+                """.format(sell_count), unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            # Score Statistics with enhanced styling
+            st.markdown("""
+            <div style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 1.5rem;
+                border-radius: 15px;
+                margin: 1.5rem 0;
+                color: white;
+                box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+            ">
+                <h3 style="
+                    margin: 0 0 1rem 0;
+                    font-weight: 600;
+                    text-align: center;
+                ">Score Statistics:</h3>
+            """, unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("""
+                <div style="text-align: center; padding: 1rem;">
+                    <h4 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Average Score</h4>
+                    <h2 style="margin: 0.5rem 0 0 0; font-size: 1.8rem; font-weight: 700;">{:.4f}</h2>
+                </div>
+                """.format(avg_score), unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("""
+                <div style="text-align: center; padding: 1rem;">
+                    <h4 style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Score Range</h4>
+                    <h2 style="margin: 0.5rem 0 0 0; font-size: 1.2rem; font-weight: 700;">{}</h2>
+                </div>
+                """.format(score_range), unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            # Enhanced signal distribution chart
             if summary.get('signal_distribution'):
                 signal_data = summary['signal_distribution']
                 if any(signal_data.values()):
-                    st.bar_chart(signal_data)
+                    st.markdown("""
+                    <div style="
+                        background: white;
+                        padding: 1.5rem;
+                        border-radius: 15px;
+                        margin: 1.5rem 0;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        border: 1px solid #e9ecef;
+                    ">
+                        <h3 style="
+                            color: #495057;
+                            margin: 0 0 1rem 0;
+                            font-weight: 600;
+                            text-align: center;
+                        ">📈 Signal Distribution Chart</h3>
+                    """, unsafe_allow_html=True)
+                    
+                    # Create a more colorful chart
+                    import pandas as pd
+                    chart_df = pd.DataFrame(list(signal_data.items()), columns=['Signal', 'Count'])
+                    st.bar_chart(chart_df.set_index('Signal'), use_container_width=True)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
                     
         except Exception as e:
             st.error(f"Error displaying summary: {str(e)}")
