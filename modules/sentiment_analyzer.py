@@ -25,9 +25,10 @@ class SentimentAnalyzer:
     def setup_apis(self):
         """Setup API connections for X, Reddit, and StockTwits"""
         try:
-            # X (Twitter) via Grok API setup
+            # X (Twitter) API configuration - Updated with correct endpoint
             self.xai_api_key = os.getenv("XAI_API_KEY")
-            self.xai_api_url = os.getenv("XAI_API_URL", "https://api.x.ai/v1/chat/completions")
+            self.xai_api_url = os.getenv("XAI_API_URL", "https://api.x.ai/v1/messages")
+            self.xai_model = os.getenv("XAI_MODEL", "grok-3")
             
             # Reddit API setup
             self.reddit = None
@@ -240,8 +241,13 @@ Reddit API 401 Error - Authentication Failed:
             print(f"🔍 X API Config for {ticker}:")
             print(f"   API Key: {self.xai_api_key[:10]}...{self.xai_api_key[-4:] if len(self.xai_api_key) > 14 else 'SHORT_KEY'}")
             print(f"   API URL: {self.xai_api_url}")
+            print(f"   Model: {self.xai_model}")
             
-            prompt = f"Analyze recent X posts about ${ticker} stock. Count positive vs negative sentiment mentions. Return format: 'positive: X, negative: Y'"
+            # Updated prompt for better sentiment analysis
+            prompt = f"Analyze recent X (Twitter) posts about ${ticker} stock. Count positive vs negative sentiment mentions in the last 24 hours. Return only numbers in format: 'positive: X, negative: Y'"
+            
+            # Use the correct X API format
+            messages = [{"role": "user", "content": prompt}]
             
             headers = {
                 "Authorization": f"Bearer {self.xai_api_key}",
@@ -249,10 +255,10 @@ Reddit API 401 Error - Authentication Failed:
             }
             
             payload = {
-                "model": "grok-beta",
-                "messages": [{"role": "user", "content": prompt}],
+                "model": self.xai_model,
+                "messages": messages,
                 "max_tokens": 100,
-                "temperature": 0.1
+                "temperature": 0.3
             }
             
             print(f"🚀 Making X API request for {ticker}...")
@@ -321,11 +327,22 @@ Set XAI_API_URL to the correct Grok API endpoint in Railway variables.
             # Raise for other HTTP errors
             response.raise_for_status()
             
-            # Parse successful response
-            content = response.json()["choices"][0]["message"]["content"].lower()
+            # Parse successful response using correct X API format
+            data = response.json()
+            
+            # Handle the correct X API response structure
+            if "content" in data and len(data["content"]) > 0:
+                content = data["content"][0]["text"].lower()
+            elif "choices" in data and len(data["choices"]) > 0:
+                # Fallback for OpenAI-style response
+                content = data["choices"][0]["message"]["content"].lower()
+            else:
+                print(f"⚠️  Unexpected X API response format for {ticker}: {data}")
+                return 0
+            
             print(f"✅ X API response for {ticker}: {content[:100]}...")
             
-            # Parse response
+            # Parse response for sentiment counts
             positive = 0
             negative = 0
             
@@ -335,7 +352,7 @@ Set XAI_API_URL to the correct Grok API endpoint in Railway variables.
                 if "negative:" in content:
                     negative = int(content.split("negative:")[1].split(",")[0].strip())
             except:
-                # Fallback parsing
+                # Enhanced fallback parsing with regex
                 import re
                 pos_match = re.search(r'positive[:\s]+(\d+)', content)
                 neg_match = re.search(r'negative[:\s]+(\d+)', content)
@@ -343,6 +360,13 @@ Set XAI_API_URL to the correct Grok API endpoint in Railway variables.
                     positive = int(pos_match.group(1))
                 if neg_match:
                     negative = int(neg_match.group(1))
+                
+                # Additional fallback - look for any numbers in context
+                if positive == 0 and negative == 0:
+                    numbers = re.findall(r'\d+', content)
+                    if len(numbers) >= 2:
+                        positive = int(numbers[0])
+                        negative = int(numbers[1])
             
             sentiment_score = positive - negative
             print(f"✅ X sentiment for {ticker}: +{positive} -{negative} = {sentiment_score}")
