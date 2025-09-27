@@ -222,11 +222,11 @@ class WeightValidator:
     def get_default_weights() -> Dict[str, float]:
         """Get default category weights"""
         return {
-            'momentum': 0.2,
-            'trend': 0.3,
-            'volatility': 0.15,
-            'strength': 0.2,
-            'support_resistance': 0.15
+            'momentum': 0.30,
+            'trend': 0.40,
+            'volatility': 0.05,
+            'strength': 0.05,
+            'support_resistance': 0.20
         }
 
 

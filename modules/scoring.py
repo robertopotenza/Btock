@@ -14,11 +14,11 @@ class ScoringEngine:
     
     def __init__(self):
         self.category_weights = {
-            'momentum': 0.2,
-            'trend': 0.3,
-            'volatility': 0.15,
-            'strength': 0.2,
-            'support_resistance': 0.15
+            'momentum': 0.30,
+            'trend': 0.40,
+            'volatility': 0.05,
+            'strength': 0.05,
+            'support_resistance': 0.20
         }
         
         # Thresholds for BUY/HOLD/SELL signals
