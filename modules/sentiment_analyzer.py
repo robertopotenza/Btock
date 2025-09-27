@@ -233,7 +233,13 @@ Reddit API 401 Error - Authentication Failed:
         """Get sentiment from X (Twitter) using Grok API"""
         try:
             if not self.xai_api_key:
+                print(f"⚠️  X API key not configured for {ticker}")
                 return 0
+            
+            # Debug: Show current API configuration
+            print(f"🔍 X API Config for {ticker}:")
+            print(f"   API Key: {self.xai_api_key[:10]}...{self.xai_api_key[-4:] if len(self.xai_api_key) > 14 else 'SHORT_KEY'}")
+            print(f"   API URL: {self.xai_api_url}")
             
             prompt = f"Analyze recent X posts about ${ticker} stock. Count positive vs negative sentiment mentions. Return format: 'positive: X, negative: Y'"
             
@@ -249,10 +255,75 @@ Reddit API 401 Error - Authentication Failed:
                 "temperature": 0.1
             }
             
+            print(f"🚀 Making X API request for {ticker}...")
             response = requests.post(self.xai_api_url, headers=headers, json=payload, timeout=30)
+            
+            # Enhanced error handling
+            if response.status_code == 404:
+                error_msg = f"""
+❌ X API 404 Error for {ticker}:
+
+🔍 DIAGNOSIS:
+- API Endpoint: {self.xai_api_url}
+- Status Code: 404 (Not Found)
+- This means the API endpoint doesn't exist or is incorrect
+
+🔧 POSSIBLE CAUSES:
+1. Wrong API URL - Grok API endpoint may have changed
+2. API key doesn't have access to this endpoint
+3. Grok API service not available in your region
+4. API key format incorrect
+
+🛠️  TROUBLESHOOTING STEPS:
+
+1. Verify Grok API Access:
+   - Check if you have Grok API access at https://x.ai/
+   - Ensure your API key is valid and active
+   - Verify billing/subscription status
+
+2. Test API Key Manually:
+   curl -H "Authorization: Bearer {self.xai_api_key[:10]}..." \\
+        -H "Content-Type: application/json" \\
+        -d '{{"model":"grok-beta","messages":[{{"role":"user","content":"test"}}],"max_tokens":1}}' \\
+        {self.xai_api_url}
+
+3. Alternative API Endpoints to Try:
+   - https://api.x.ai/v1/chat/completions (current)
+   - https://api.openai.com/v1/chat/completions (if using OpenAI)
+   - Check Grok documentation for correct endpoint
+
+4. Environment Variables Check:
+   - XAI_API_KEY: Set and valid
+   - XAI_API_URL: Correct endpoint (optional, defaults to x.ai)
+
+💡 QUICK FIX:
+Set XAI_API_URL to the correct Grok API endpoint in Railway variables.
+                """
+                print(error_msg)
+                if hasattr(st, 'error'):
+                    st.error(f"X API 404 Error for {ticker}")
+                    st.info("Check console/logs for detailed troubleshooting steps")
+                return 0
+            
+            elif response.status_code == 401:
+                print(f"❌ X API 401 Unauthorized for {ticker}: Invalid API key")
+                if hasattr(st, 'error'):
+                    st.error(f"X API Authentication Failed for {ticker}")
+                    st.info("Check XAI_API_KEY in Railway environment variables")
+                return 0
+            
+            elif response.status_code == 403:
+                print(f"❌ X API 403 Forbidden for {ticker}: Access denied or rate limited")
+                if hasattr(st, 'warning'):
+                    st.warning(f"X API Access Denied for {ticker}")
+                return 0
+            
+            # Raise for other HTTP errors
             response.raise_for_status()
             
+            # Parse successful response
             content = response.json()["choices"][0]["message"]["content"].lower()
+            print(f"✅ X API response for {ticker}: {content[:100]}...")
             
             # Parse response
             positive = 0
@@ -264,12 +335,24 @@ Reddit API 401 Error - Authentication Failed:
                 if "negative:" in content:
                     negative = int(content.split("negative:")[1].split(",")[0].strip())
             except:
-                pass
+                # Fallback parsing
+                import re
+                pos_match = re.search(r'positive[:\s]+(\d+)', content)
+                neg_match = re.search(r'negative[:\s]+(\d+)', content)
+                if pos_match:
+                    positive = int(pos_match.group(1))
+                if neg_match:
+                    negative = int(neg_match.group(1))
             
-            return positive - negative
+            sentiment_score = positive - negative
+            print(f"✅ X sentiment for {ticker}: +{positive} -{negative} = {sentiment_score}")
+            return sentiment_score
             
         except Exception as e:
-            st.warning(f"X sentiment analysis failed for {ticker}: {str(e)}")
+            error_details = f"X sentiment analysis failed for {ticker}: {str(e)}"
+            print(f"❌ {error_details}")
+            if hasattr(st, 'warning'):
+                st.warning(error_details)
             return 0
     
     def _get_reddit_sentiment(self, ticker: str, start_time: datetime, end_time: datetime) -> int:
