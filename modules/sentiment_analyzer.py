@@ -278,35 +278,89 @@ Reddit API 401 Error - Authentication Failed:
             if not self.reddit:
                 return 0
             
-            subreddits = ["stocks", "investing", "SecurityAnalysis", "StockMarket"]
+            subreddits = ["stocks", "investing", "SecurityAnalysis", "StockMarket", "wallstreetbets"]
             total_score = 0
+            posts_found = 0
+            
+            print(f"🔍 Searching Reddit for {ticker} in {len(subreddits)} subreddits...")
             
             for subreddit_name in subreddits:
                 try:
                     subreddit = self.reddit.subreddit(subreddit_name)
                     
-                    for submission in subreddit.search(f"${ticker} OR {ticker}", limit=5):
-                        created_time = datetime.fromtimestamp(submission.created_utc, tz=timezone.utc)
-                        
-                        if start_time <= created_time <= end_time:
-                            text = (submission.title + " " + submission.selftext).lower()
-                            
-                            positive_words = ["buy", "bullish", "up", "good", "great", "strong", "positive"]
-                            negative_words = ["sell", "bearish", "down", "bad", "weak", "negative", "drop"]
-                            
-                            pos_count = sum(1 for word in positive_words if word in text)
-                            neg_count = sum(1 for word in negative_words if word in text)
-                            
-                            if pos_count > neg_count:
-                                total_score += 1
-                            elif neg_count > pos_count:
-                                total_score -= 1
+                    # Try multiple search strategies
+                    search_queries = [
+                        f"{ticker}",           # Just ticker
+                        f"${ticker}",          # With dollar sign
+                        f"{ticker} stock",     # With "stock"
+                        f"{ticker.lower()}"    # Lowercase
+                    ]
                     
-                    time.sleep(0.2)
+                    for query in search_queries:
+                        try:
+                            # Search recent posts (last week) and sort by new
+                            for submission in subreddit.search(query, sort='new', time_filter='week', limit=10):
+                                created_time = datetime.fromtimestamp(submission.created_utc, tz=timezone.utc)
+                                
+                                # More lenient time filter - check if post is within our timeframe
+                                if created_time >= start_time:
+                                    posts_found += 1
+                                    text = (submission.title + " " + (submission.selftext or "")).lower()
+                                    
+                                    # Enhanced sentiment analysis
+                                    positive_words = [
+                                        "buy", "bullish", "bull", "up", "rise", "rising", "good", "great", 
+                                        "strong", "positive", "moon", "rocket", "calls", "long", "hold",
+                                        "undervalued", "growth", "profit", "gains", "winning", "beat"
+                                    ]
+                                    negative_words = [
+                                        "sell", "bearish", "bear", "down", "fall", "falling", "bad", "weak", 
+                                        "negative", "drop", "crash", "puts", "short", "overvalued", "loss",
+                                        "losing", "miss", "decline", "dump", "avoid"
+                                    ]
+                                    
+                                    # Count sentiment words
+                                    pos_count = sum(1 for word in positive_words if word in text)
+                                    neg_count = sum(1 for word in negative_words if word in text)
+                                    
+                                    # Score the post
+                                    if pos_count > neg_count:
+                                        total_score += 1
+                                    elif neg_count > pos_count:
+                                        total_score -= 1
+                                    
+                                    # Also check comments for popular posts
+                                    if submission.num_comments > 5:
+                                        try:
+                                            submission.comments.replace_more(limit=0)
+                                            for comment in submission.comments[:3]:  # Check top 3 comments
+                                                if hasattr(comment, 'body'):
+                                                    comment_text = comment.body.lower()
+                                                    comment_pos = sum(1 for word in positive_words if word in comment_text)
+                                                    comment_neg = sum(1 for word in negative_words if word in comment_text)
+                                                    
+                                                    if comment_pos > comment_neg:
+                                                        total_score += 1
+                                                    elif comment_neg > comment_pos:
+                                                        total_score -= 1
+                                        except:
+                                            pass
+                            
+                            # Small delay between searches
+                            time.sleep(0.1)
+                            
+                        except Exception as search_e:
+                            print(f"   Search failed for '{query}' in r/{subreddit_name}: {search_e}")
+                            continue
                     
-                except Exception:
+                    # Delay between subreddits
+                    time.sleep(0.3)
+                    
+                except Exception as sub_e:
+                    print(f"   Subreddit r/{subreddit_name} failed: {sub_e}")
                     continue
             
+            print(f"✅ Reddit search complete for {ticker}: {posts_found} posts found, sentiment score: {total_score}")
             return total_score
             
         except Exception as e:
