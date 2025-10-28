@@ -235,6 +235,37 @@ docker run -p 8501:8501 \
 - Sentiment-based risk assessment
 - Multi-timeframe analysis capabilities
 
+## 🎯 Support-Resistance Buy Ranker
+
+A standalone Python script (`sr_ranker.py`) that ranks stocks based on their proximity to support levels using technical analysis. This tool helps identify potential buying opportunities by analyzing:
+
+### Features
+- **Support/Resistance Analysis**: Identifies swing highs/lows using local extrema detection
+- **Trend Analysis**: Uses 50-period and 200-period EMAs to determine trend direction
+- **Momentum Analysis**: Calculates 14-period RSI for momentum assessment
+- **Smart Ranking**: Sorts stocks by proximity to support (lowest ratio first) and trend strength
+
+### Buy Signal Criteria
+- **Buy zone ✅**: Ratio ≤ 0.35, Positive trend, RSI 35-60
+- **Watch ⚠️**: Ratio ≤ 0.55, Positive trend
+- **Avoid ❌**: All other conditions
+
+### Usage
+```bash
+# Run the ranker
+python sr_ranker.py
+
+# Output:
+# - Console table with ranked results
+# - CSV file: sr_ranked_results.csv
+```
+
+### Technical Details
+- Fetches 12 months (370 days) of daily OHLCV data from Yahoo Finance
+- Analyzes 30 major US stocks (configurable ticker list)
+- Position ratio: 0.0 = at support (ideal), 1.0 = at resistance
+- Includes error handling for missing/insufficient data
+
 ## 🔮 Future Enhancements
 
 - **News Sentiment**: Integration with financial news APIs
