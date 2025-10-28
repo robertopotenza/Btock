@@ -101,13 +101,16 @@ def local_extrema(prices: pd.Series, window: int = 5) -> tuple[pd.Series, pd.Ser
         # Get window slice once for efficiency
         window_slice = prices.iloc[i-window:i+window+1]
         current_price = prices.iloc[i]
+        # Get immediate neighbors
+        prev_price = prices.iloc[i-1]
+        next_price = prices.iloc[i+1]
         
-        # Check if current point is a local minimum
-        if current_price == window_slice.min():
+        # Check if current point is a strict local minimum
+        if current_price < prev_price and current_price < next_price:
             local_mins.iloc[i] = True
         
-        # Check if current point is a local maximum
-        if current_price == window_slice.max():
+        # Check if current point is a strict local maximum
+        if current_price > prev_price and current_price > next_price:
             local_maxs.iloc[i] = True
     
     return local_mins, local_maxs
