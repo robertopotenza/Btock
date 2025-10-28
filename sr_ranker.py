@@ -98,12 +98,16 @@ def local_extrema(prices: pd.Series, window: int = 5) -> tuple[pd.Series, pd.Ser
     local_maxs = pd.Series(False, index=prices.index)
     
     for i in range(window, len(prices) - window):
+        # Get window slice once for efficiency
+        window_slice = prices.iloc[i-window:i+window+1]
+        current_price = prices.iloc[i]
+        
         # Check if current point is a local minimum
-        if prices.iloc[i] == prices.iloc[i-window:i+window+1].min():
+        if current_price == window_slice.min():
             local_mins.iloc[i] = True
         
         # Check if current point is a local maximum
-        if prices.iloc[i] == prices.iloc[i-window:i+window+1].max():
+        if current_price == window_slice.max():
             local_maxs.iloc[i] = True
     
     return local_mins, local_maxs
@@ -157,6 +161,26 @@ def swing_levels(prices: pd.Series, window: int = 5, k: int = 3) -> tuple[float,
     return support, resistance
 
 
+def determine_verdict(ratio: float, trend: float, rsi_value: float) -> str:
+    """
+    Determine buy/watch/avoid verdict based on technical indicators.
+    
+    Args:
+        ratio: Position ratio (0.0 = at support, 1.0 = at resistance)
+        trend: Trend indicator (EMA50 - EMA200)
+        rsi_value: RSI momentum value (0-100)
+    
+    Returns:
+        Verdict string: "Buy zone ✅", "Watch ⚠️", or "Avoid ❌"
+    """
+    if ratio <= 0.35 and trend >= 0 and 35 <= rsi_value <= 60:
+        return "Buy zone ✅"
+    elif ratio <= 0.55 and trend >= 0:
+        return "Watch ⚠️"
+    else:
+        return "Avoid ❌"
+
+
 def analyze_ticker(ticker: str, start_date: datetime) -> Optional[Row]:
     """
     Analyze a single ticker for support/resistance buying opportunities.
@@ -206,13 +230,8 @@ def analyze_ticker(ticker: str, start_date: datetime) -> Optional[Row]:
         rsi_values = rsi(prices, period=14)
         current_rsi = rsi_values.iloc[-1]
         
-        # Determine verdict
-        if position_ratio <= 0.35 and trend >= 0 and 35 <= current_rsi <= 60:
-            verdict = "Buy zone ✅"
-        elif position_ratio <= 0.55 and trend >= 0:
-            verdict = "Watch ⚠️"
-        else:
-            verdict = "Avoid ❌"
+        # Determine verdict using helper function
+        verdict = determine_verdict(position_ratio, trend, current_rsi)
         
         return Row(
             ticker=ticker,

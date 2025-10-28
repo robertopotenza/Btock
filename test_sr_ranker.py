@@ -5,7 +5,8 @@ Tests the core functions with synthetic data (no network required)
 
 import pandas as pd
 import numpy as np
-from sr_ranker import rsi, ema, local_extrema, swing_levels, Row
+from sr_ranker import rsi, ema, local_extrema, swing_levels, Row, determine_verdict
+
 
 
 def test_rsi():
@@ -116,7 +117,7 @@ def test_row_dataclass():
 
 
 def test_verdict_logic():
-    """Test verdict determination logic"""
+    """Test verdict determination logic using the helper function"""
     print("Testing verdict logic...")
     
     # Test Buy zone criteria
@@ -124,38 +125,34 @@ def test_verdict_logic():
     trend = 1.0   # Positive trend
     rsi_val = 50.0   # Between 35 and 60
     
-    if ratio <= 0.35 and trend >= 0 and 35 <= rsi_val <= 60:
-        verdict = "Buy zone ✅"
-    elif ratio <= 0.55 and trend >= 0:
-        verdict = "Watch ⚠️"
-    else:
-        verdict = "Avoid ❌"
-    
+    verdict = determine_verdict(ratio, trend, rsi_val)
     assert verdict == "Buy zone ✅", f"Expected Buy zone, got {verdict}"
     
     # Test Watch criteria
     ratio = 0.50
-    if ratio <= 0.35 and trend >= 0 and 35 <= rsi_val <= 60:
-        verdict = "Buy zone ✅"
-    elif ratio <= 0.55 and trend >= 0:
-        verdict = "Watch ⚠️"
-    else:
-        verdict = "Avoid ❌"
-    
+    verdict = determine_verdict(ratio, trend, rsi_val)
     assert verdict == "Watch ⚠️", f"Expected Watch, got {verdict}"
     
     # Test Avoid criteria
     ratio = 0.80
-    if ratio <= 0.35 and trend >= 0 and 35 <= rsi_val <= 60:
-        verdict = "Buy zone ✅"
-    elif ratio <= 0.55 and trend >= 0:
-        verdict = "Watch ⚠️"
-    else:
-        verdict = "Avoid ❌"
-    
+    verdict = determine_verdict(ratio, trend, rsi_val)
     assert verdict == "Avoid ❌", f"Expected Avoid, got {verdict}"
     
+    # Test Avoid due to negative trend
+    ratio = 0.30
+    trend = -1.0
+    verdict = determine_verdict(ratio, trend, rsi_val)
+    assert verdict == "Avoid ❌", f"Expected Avoid due to negative trend, got {verdict}"
+    
+    # Test Avoid due to RSI out of range
+    ratio = 0.30
+    trend = 1.0
+    rsi_val = 70.0
+    verdict = determine_verdict(ratio, trend, rsi_val)
+    assert verdict == "Watch ⚠️", f"Expected Watch (RSI too high for buy), got {verdict}"
+    
     print("  ✅ Verdict logic test passed")
+
 
 
 def main():
