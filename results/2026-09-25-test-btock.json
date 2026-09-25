@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-09-25T20:42:31.546601+00:00",
+  "period": "1y",
+  "weights": {
+    "momentum": 0.3,
+    "trend": 0.4,
+    "volatility": 0.05,
+    "strength": 0.05,
+    "support_resistance": 0.2
+  },
+  "buy_threshold": 0.5,
+  "sell_threshold": -0.5,
+  "cache_dir": "/home/runner/work/_temp/btock-cache",
+  "ttl_seconds": 900,
+  "refresh": false,
+  "requested_tickers": [
+    "AAPL",
+    "BRK-B"
+  ],
+  "results": {
+    "AAPL": {
+      "ticker": "AAPL",
+      "signal": "HOLD",
+      "weighted_score": 0.4759,
+      "category_scores": {
+        "momentum": 0.5574,
+        "trend": 0.4919,
+        "volatility": 0.3832,
+        "strength": 0.0154,
+        "support_resistance": 0.4597
+      },
+      "latest_close": 341.07000732421875,
+      "last_observation": "2026-09-25T00:00:00-04:00",
+      "source": "yfinance",
+      "cache_hit": false,
+      "cache_age_seconds": null,
+      "history_rows": 251,
+      "note": "latest_close is the last history bar's close, not a live quote; an intraday bar may be incomplete."
+    },
+    "BRK-B": {
+      "ticker": "BRK-B",
+      "signal": "HOLD",
+      "weighted_score": -0.0289,
+      "category_scores": {
+        "momentum": -0.3686,
+        "trend": -0.0765,
+        "volatility": 0.1767,
+        "strength": -0.5497,
+        "support_resistance": 0.6548
+      },
+      "latest_close": 505.4800109863281,
+      "last_observation": "2026-09-25T00:00:00-04:00",
+      "source": "yfinance",
+      "cache_hit": false,
+      "cache_age_seconds": null,
+      "history_rows": 251,
+      "note": "latest_close is the last history bar's close, not a live quote; an intraday bar may be incomplete."
+    }
+  },
+  "errors": {}
+}

@@ -1,0 +1,121 @@
+{
+  "run_id": "2026-09-25-test",
+  "cutoff_et": "2026-09-25T09:00:00-04:00",
+  "window_start_utc": "2026-09-24T22:00:00+00:00",
+  "window_end_utc": "2026-09-25T13:00:00+00:00",
+  "executed_at_utc": "2026-09-25T20:42:31.665077+00:00",
+  "coverage": {
+    "signed_in": true,
+    "pages_visited": 3,
+    "coverage_complete": true,
+    "oldest_seen_utc": "2026-09-24T21:30:00+00:00",
+    "inaccessible": [
+      "https://seekingalpha.com/article/example-inaccessible"
+    ],
+    "articles": [
+      {
+        "url": "https://seekingalpha.com/article/aapl-buy-case",
+        "published_at": "2026-09-25T02:15:00+00:00",
+        "author": "Jane Analyst",
+        "sa_tickers": [
+          "AAPL"
+        ],
+        "rating": "Buy",
+        "rating_verified": true
+      },
+      {
+        "url": "https://seekingalpha.com/article/brkb-strong-buy",
+        "published_at": "2026-09-25T05:40:00+00:00",
+        "author": "John Writer",
+        "sa_tickers": [
+          "BRK.B"
+        ],
+        "rating": "Strong Buy",
+        "rating_verified": true
+      },
+      {
+        "url": "https://seekingalpha.com/article/msft-hold-case",
+        "published_at": "2026-09-25T06:00:00+00:00",
+        "author": "Someone Else",
+        "sa_tickers": [
+          "MSFT"
+        ],
+        "rating": "Hold",
+        "rating_verified": true
+      }
+    ],
+    "qualifying_tickers": {
+      "AAPL": "AAPL",
+      "BRK.B": "BRK-B"
+    }
+  },
+  "sa_to_yahoo_map": {
+    "AAPL": "AAPL",
+    "BRK.B": "BRK-B"
+  },
+  "btock_report": {
+    "generated_at": "2026-09-25T20:42:31.546601+00:00",
+    "period": "1y",
+    "weights": {
+      "momentum": 0.3,
+      "trend": 0.4,
+      "volatility": 0.05,
+      "strength": 0.05,
+      "support_resistance": 0.2
+    },
+    "buy_threshold": 0.5,
+    "sell_threshold": -0.5,
+    "cache_dir": "/home/runner/work/_temp/btock-cache",
+    "ttl_seconds": 900,
+    "refresh": false,
+    "requested_tickers": [
+      "AAPL",
+      "BRK-B"
+    ],
+    "results": {
+      "AAPL": {
+        "ticker": "AAPL",
+        "signal": "HOLD",
+        "weighted_score": 0.4759,
+        "category_scores": {
+          "momentum": 0.5574,
+          "trend": 0.4919,
+          "volatility": 0.3832,
+          "strength": 0.0154,
+          "support_resistance": 0.4597
+        },
+        "latest_close": 341.07000732421875,
+        "last_observation": "2026-09-25T00:00:00-04:00",
+        "source": "yfinance",
+        "cache_hit": false,
+        "cache_age_seconds": null,
+        "history_rows": 251,
+        "note": "latest_close is the last history bar's close, not a live quote; an intraday bar may be incomplete."
+      },
+      "BRK-B": {
+        "ticker": "BRK-B",
+        "signal": "HOLD",
+        "weighted_score": -0.0289,
+        "category_scores": {
+          "momentum": -0.3686,
+          "trend": -0.0765,
+          "volatility": 0.1767,
+          "strength": -0.5497,
+          "support_resistance": 0.6548
+        },
+        "latest_close": 505.4800109863281,
+        "last_observation": "2026-09-25T00:00:00-04:00",
+        "source": "yfinance",
+        "cache_hit": false,
+        "cache_age_seconds": null,
+        "history_rows": 251,
+        "note": "latest_close is the last history bar's close, not a live quote; an intraday bar may be incomplete."
+      }
+    },
+    "errors": {}
+  },
+  "subject": "Seeking Alpha CLOUD test \u2014 2026-09-25",
+  "recipient": "eng.potenza@gmail.com",
+  "email_body": "Window (America/New_York, [start, end)): [2026-09-24T18:00:00-04:00 , 2026-09-25T09:00:00-04:00) America/New_York ([2026-09-24T22:00:00+00:00 , 2026-09-25T13:00:00+00:00) UTC)\nRun identifier: 2026-09-25-test  (TEST)\n\n1 article page(s) could not be read / rating not verifiable:\n  - https://seekingalpha.com/article/example-inaccessible\n\nDeduplicated qualifying tickers (Buy/Strong Buy, article-specific): 2\n  - AAPL\n  - BRK.B -> BRK-B\n\nNo successful Btock BUY signals this run.\n\nOther successful signals (not BUY, for reference): AAPL, BRK-B",
+  "gmail_message_id": "<06998710-d772-4c63-b62e-1b3899c632e4@btock-cloud>"
+}
