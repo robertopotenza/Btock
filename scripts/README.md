@@ -56,15 +56,31 @@ Practical options going forward, in order of preference:
    `storage_state`, and only the download/scoring/email steps run
    unattended in the cloud. This still may not survive PerimeterX's
    fingerprinting of automation, even non-headless.
-3. Accept that the Seeking Alpha leg stays manual (you supply the
-   qualifying-ticker list via `--manual-coverage-file`) while everything
-   downstream (Btock scoring, dedup, dated records, email) runs
-   unattended in GitHub Actions.
+3. **Standing approach implemented now**: the Seeking Alpha leg stays
+   manual (you, or a future policy-compliant source, supply a coverage
+   JSON) while everything downstream is fully unattended -- see
+   "Coverage-upload trigger" below.
 
-Until one of these is confirmed working end-to-end, the GitHub Actions
-workflow (`.github/workflows/seeking-alpha-scan.yml`) is **manual-dispatch
-only** -- no `schedule:` trigger -- exactly per the "leave the schedule
-inactive if a gate fails" instruction.
+Until 1 or 2 is confirmed working end-to-end, the GitHub Actions workflow
+(`.github/workflows/seeking-alpha-scan.yml`) has **no `schedule:`
+trigger** -- exactly per the "leave the schedule inactive if a gate
+fails" instruction.
+
+### Coverage-upload trigger (the current standing approach)
+
+Push a coverage JSON to `coverage/YYYY-MM-DD.json` on `main` (same shape
+as `sa_scraper.py`'s own output -- see
+`scripts/fixtures/manual_coverage_example.json`) and the
+`scan-from-coverage-upload` job in
+`.github/workflows/seeking-alpha-scan.yml` runs automatically: Btock
+scoring, dedup, the dated `results/` record, and a **real** (non-test)
+email, with the same duplicate-send protection as every other path (a
+second push for the same date is a no-op). This is not the originally
+requested "runs itself every weekday morning" schedule -- it still needs
+a human (or a future automated source) to produce that day's qualifying
+articles -- but it removes every other manual step, and can be upgraded
+to a true `schedule:` trigger later with zero changes to `orchestrate.py`
+or `run.py` once the Seeking Alpha leg is unblocked.
 
 ## Required GitHub repo secrets (set in the GitHub UI, never in chat)
 
