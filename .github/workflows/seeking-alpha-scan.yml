@@ -1,0 +1,185 @@
+# Seeking Alpha -> Btock -> Gmail cloud workflow.
+#
+# NO SCHEDULE TRIGGER BY DESIGN: a live, unattended Seeking Alpha scan is
+# currently blocked by Seeking Alpha's PerimeterX bot protection (a 403
+# CAPTCHA wall hit headless Chromium before any login was attempted -- see
+# scripts/sa_scraper.py's docstring and PR #40). Do not add a `schedule:`
+# trigger until a policy-compliant way to read Seeking Alpha's
+# article-level author ratings is confirmed working end to end.
+#
+# Until then, this workflow runs two ways, both requiring a human (or a
+# future policy-compliant data source) to supply the day's qualifying
+# articles -- everything downstream (Btock scoring, dedup, dated record,
+# email, duplicate-send protection) is fully unattended:
+#
+#   1. workflow_dispatch -- manual run, for testing.
+#   2. push to `coverage/YYYY-MM-DD.json` on main -- drop a coverage file
+#      (see scripts/fixtures/manual_coverage_example.json for the shape;
+#      it's sa_scraper.py's own output format) at that path and pushing it
+#      triggers a REAL (non-test) run for that date automatically. This is
+#      the standing approach while the SA leg itself is manual.
+#
+# Required repository secrets (set these in GitHub, never in chat):
+#   GMAIL_SENDER_ADDRESS   Gmail address to send the report from
+#   GMAIL_APP_PASSWORD     Gmail App Password for that address
+#                           (https://myaccount.google.com/apppasswords)
+#   SA_STORAGE_STATE_B64   (only once live SA access is possible) a
+#                           base64-encoded Playwright storage_state JSON,
+#                           exported from an already signed-in browser --
+#                           see scripts/sa_scraper.py's docstring.
+
+name: Seeking Alpha CLOUD scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      cutoff_et:
+        description: "Wall-clock ET cutoff, e.g. 2026-09-25T09:00:00 (blank = today 09:00 ET)"
+        required: false
+      test:
+        description: "Send as a test run (subject prefix, -test run id suffix)"
+        type: boolean
+        default: true
+      dry_run:
+        description: "Compute everything but do not send the email"
+        type: boolean
+        default: false
+      manual_coverage_file:
+        description: "Repo-relative path to a manual coverage JSON, for testing the Btock+email leg while live SA scraping is blocked"
+        required: false
+  push:
+    branches: [main]
+    paths:
+      - "coverage/*.json"
+
+jobs:
+  scan:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run orchestrator
+        env:
+          GMAIL_SENDER_ADDRESS: ${{ secrets.GMAIL_SENDER_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SA_STORAGE_STATE_B64: ${{ secrets.SA_STORAGE_STATE_B64 }}
+        run: |
+          set -eu
+          ARGS="--results-dir results --cache-dir ${RUNNER_TEMP}/btock-cache --ttl 900"
+          if [ -n "${{ inputs.cutoff_et }}" ]; then
+            ARGS="$ARGS --cutoff-et ${{ inputs.cutoff_et }}"
+          fi
+          if [ "${{ inputs.test }}" = "true" ]; then
+            ARGS="$ARGS --test"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "${{ inputs.manual_coverage_file }}" ]; then
+            ARGS="$ARGS --manual-coverage-file ${{ inputs.manual_coverage_file }}"
+          elif [ -n "${SA_STORAGE_STATE_B64:-}" ]; then
+            ARGS="$ARGS --storage-state SA_STORAGE_STATE_B64"
+          fi
+          python scripts/orchestrate.py $ARGS
+
+      - name: Commit dated result record (durable storage)
+        run: |
+          set -eu
+          git config user.name "btock-cloud-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Btock cloud scan result $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          else
+            echo "No result changes to commit"
+          fi
+
+      - name: Upload result record as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: btock-results
+          path: results/
+          retention-days: 90
+
+  scan-from-coverage-upload:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Find newly pushed coverage files
+        id: files
+        run: |
+          set -eu
+          files=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'coverage/*.json' || true)
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$files" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run orchestrator for each coverage file (real, non-test run)
+        if: steps.files.outputs.files != ''
+        env:
+          GMAIL_SENDER_ADDRESS: ${{ secrets.GMAIL_SENDER_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          set -eu
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            base="$(basename "$f" .json)"
+            date="${base%%-test}"
+            case "$date" in
+              [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) : ;;
+              *) echo "Skipping $f: filename must be coverage/YYYY-MM-DD.json"; continue ;;
+            esac
+            echo "Processing $f for cutoff ${date}T09:00:00 ET"
+            python scripts/orchestrate.py \
+              --manual-coverage-file "$f" \
+              --cutoff-et "${date}T09:00:00" \
+              --results-dir results \
+              --cache-dir "${RUNNER_TEMP}/btock-cache" \
+              --ttl 900
+          done <<< "${{ steps.files.outputs.files }}"
+
+      - name: Commit dated result record (durable storage)
+        if: steps.files.outputs.files != ''
+        run: |
+          set -eu
+          git config user.name "btock-cloud-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Btock cloud scan result $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          else
+            echo "No result changes to commit"
+          fi
+
+      - name: Upload result record as a workflow artifact
+        if: steps.files.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: btock-results
+          path: results/
+          retention-days: 90
