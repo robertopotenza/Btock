@@ -1,11 +1,13 @@
 # Seeking Alpha -> Btock -> Gmail cloud workflow
 
-Status as of this build: **the Btock scoring and Gmail-delivery halves of
-this pipeline are built and verified. The Seeking Alpha scan half is
-built but currently blocked, and the recurring schedule has deliberately
-NOT been created** (see "Known blocker" below). This document says
-exactly what is verified, what isn't, and what a human needs to do to
-finish activating it.
+Status: **the Btock scoring and Gmail-delivery halves of this pipeline are
+built, verified end-to-end in GitHub Actions, and scheduled to run every
+weekday at 6:00 AM America/Los_Angeles, PC off or on. The Seeking Alpha
+scan half is still blocked** (see "Known blocker" below) and stays a
+manual input: if no `coverage/YYYY-MM-DD.json` exists for that morning's
+date, the scheduled run sends an honest "Seeking Alpha scan did not run"
+email instead of fabricating a result. This document says exactly what is
+verified, what isn't, and what's still a human's job each morning.
 
 ## Components
 
@@ -61,26 +63,38 @@ Practical options going forward, in order of preference:
    JSON) while everything downstream is fully unattended -- see
    "Coverage-upload trigger" below.
 
-Until 1 or 2 is confirmed working end-to-end, the GitHub Actions workflow
-(`.github/workflows/seeking-alpha-scan.yml`) has **no `schedule:`
-trigger** -- exactly per the "leave the schedule inactive if a gate
-fails" instruction.
+Even so, **everything except reading seekingalpha.com is fully
+automated**, including a weekday schedule (see below) -- the only
+remaining manual step is supplying that day's qualifying tickers.
 
-### Coverage-upload trigger (the current standing approach)
+### The three ways a run fires
 
-Push a coverage JSON to `coverage/YYYY-MM-DD.json` on `main` (same shape
-as `sa_scraper.py`'s own output -- see
-`scripts/fixtures/manual_coverage_example.json`) and the
-`scan-from-coverage-upload` job in
-`.github/workflows/seeking-alpha-scan.yml` runs automatically: Btock
-scoring, dedup, the dated `results/` record, and a **real** (non-test)
-email, with the same duplicate-send protection as every other path (a
-second push for the same date is a no-op). This is not the originally
-requested "runs itself every weekday morning" schedule -- it still needs
-a human (or a future automated source) to produce that day's qualifying
-articles -- but it removes every other manual step, and can be upgraded
-to a true `schedule:` trigger later with zero changes to `orchestrate.py`
-or `run.py` once the Seeking Alpha leg is unblocked.
+1. **`workflow_dispatch`** -- manual, for testing (defaults to `test:
+   true`, use `test: false` for a real send).
+2. **push to `coverage/YYYY-MM-DD.json` on `main`** -- same shape as
+   `sa_scraper.py`'s own output (see
+   `scripts/fixtures/manual_coverage_example.json`). The
+   `scan-from-coverage-upload` job runs immediately: Btock scoring,
+   dedup, the dated `results/` record, and a **real** (non-test) email.
+   Supply this whenever you have the day's data, no need to wait for the
+   schedule.
+3. **`schedule`** -- weekdays at 06:00 `America/Los_Angeles` (two cron
+   lines bracket PDT/PST since GitHub Actions cron is UTC-only and
+   doesn't know about DST; the job itself computes the real ET date, so
+   it's safe if both fire near a DST transition). The `scan-scheduled`
+   job looks for `coverage/<today's ET date>.json`:
+   - **found** -> runs the real pipeline against it, same as trigger 2.
+   - **not found** -> sends a real email that says plainly "Seeking
+     Alpha scan did not run" rather than a fabricated "no BUY matches".
+   Duplicate-send protection (keyed on the ET date) means pushing a
+   coverage file *after* the schedule already fired and found nothing is
+   not wasted -- trigger 2 still sends the real results for that date.
+
+So the practical daily routine, PC off the whole time: at any point before
+6 AM Pacific (or any time after, if you're catching up), produce that
+day's `coverage/YYYY-MM-DD.json` (by hand from your own signed-in browser,
+or from a future policy-compliant data source) and push it to `main`.
+Nothing else needs to happen.
 
 ## Required GitHub repo secrets (set in the GitHub UI, never in chat)
 
@@ -104,25 +118,17 @@ python scripts/orchestrate.py \
   --results-dir results --cache-dir /tmp/btock-cache --test --dry-run
 ```
 
-## Activating the schedule once every gate passes
+## Retiring the local Task Scheduler jobs
 
-1. Confirm a live, policy-compliant Seeking Alpha coverage path (see
-   above) and run the workflow via `workflow_dispatch` with `test: true`,
-   `dry_run: false` and confirm the resulting email and `results/*.json`
-   record look right.
-2. Add a `schedule:` trigger to
-   `.github/workflows/seeking-alpha-scan.yml`. GitHub Actions cron is UTC
-   only and does not itself understand `America/Los_Angeles` or DST, so
-   use two cron lines bracketing both offsets and let `orchestrate.py`'s
-   own `--cutoff-et` default (today 09:00 ET) decide whether it's
-   actually a run day/time, e.g.:
-   ```yaml
-   on:
-     schedule:
-       - cron: "0 16 * * 1-5"  # 09:00 PDT / 16:00 UTC (Mar-Nov)
-       - cron: "0 17 * * 1-5"  # 09:00 PST / 17:00 UTC (Nov-Mar)
-   ```
-3. Retire the local Windows Task Scheduler jobs ("Seeking Alpha weekday
-   Buy scan", "Seeking Alpha powered-off PC test") only after several
-   scheduled cloud runs have been confirmed to complete and email
-   successfully without the PC being involved.
+Retire the local Windows Task Scheduler jobs ("Seeking Alpha weekday Buy
+scan", "Seeking Alpha powered-off PC test") only after several scheduled
+cloud runs (with a real coverage file supplied) have been confirmed to
+complete and email successfully without the PC being involved.
+
+## If a policy-compliant Seeking Alpha data path ever becomes available
+
+Fill in `SA_STORAGE_STATE_B64` (or whatever the new path needs) and change
+`scan-scheduled`'s "Run orchestrator" step to pass `--storage-state
+SA_STORAGE_STATE_B64` instead of looking for a coverage file -- everything
+else (window math, dedup, scoring, email, dedup-protection) needs no
+changes.

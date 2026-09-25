@@ -1,23 +1,29 @@
 # Seeking Alpha -> Btock -> Gmail cloud workflow.
 #
-# NO SCHEDULE TRIGGER BY DESIGN: a live, unattended Seeking Alpha scan is
-# currently blocked by Seeking Alpha's PerimeterX bot protection (a 403
+# NO AUTOMATED SEEKING ALPHA READING, BY DESIGN: a live, unattended scan of
+# seekingalpha.com is blocked by their PerimeterX bot protection (a 403
 # CAPTCHA wall hit headless Chromium before any login was attempted -- see
-# scripts/sa_scraper.py's docstring and PR #40). Do not add a `schedule:`
-# trigger until a policy-compliant way to read Seeking Alpha's
-# article-level author ratings is confirmed working end to end.
+# scripts/sa_scraper.py's docstring and PR #40). Defeating that would mean
+# evading their anti-automation detection, i.e. bypassing access controls --
+# this project does not do that, on principle, not as a temporary gap.
 #
-# Until then, this workflow runs two ways, both requiring a human (or a
-# future policy-compliant data source) to supply the day's qualifying
-# articles -- everything downstream (Btock scoring, dedup, dated record,
-# email, duplicate-send protection) is fully unattended:
+# Everything else IS fully automated, including a weekday schedule so this
+# runs with the PC off (see `schedule:` below). The one remaining manual
+# step: a coverage/YYYY-MM-DD.json file (sa_scraper.py's output shape, see
+# scripts/fixtures/manual_coverage_example.json) has to exist in the repo
+# for that date's ET cutoff before the scheduled run fires, or the email
+# will honestly report "Seeking Alpha scan did not run" instead of
+# fabricating a "no matches" result. Three ways to trigger a run:
 #
 #   1. workflow_dispatch -- manual run, for testing.
-#   2. push to `coverage/YYYY-MM-DD.json` on main -- drop a coverage file
-#      (see scripts/fixtures/manual_coverage_example.json for the shape;
-#      it's sa_scraper.py's own output format) at that path and pushing it
-#      triggers a REAL (non-test) run for that date automatically. This is
-#      the standing approach while the SA leg itself is manual.
+#   2. push to `coverage/YYYY-MM-DD.json` on main -- runs immediately
+#      (real, non-test) for that date, whenever you supply it.
+#   3. schedule -- fires weekday mornings on its own; picks up that day's
+#      coverage file if one already exists, otherwise sends the honest
+#      "scan unavailable" disclosure. Duplicate-send protection means a
+#      coverage file pushed after the schedule already fired (and found
+#      nothing) still gets a normal run via trigger #2 -- it is not stuck
+#      once the schedule has "used up" the day.
 #
 # Required repository secrets (set these in GitHub, never in chat):
 #   GMAIL_SENDER_ADDRESS   Gmail address to send the report from
@@ -51,6 +57,13 @@ on:
     branches: [main]
     paths:
       - "coverage/*.json"
+  schedule:
+    # 06:00 America/Los_Angeles, weekdays. GitHub Actions cron is UTC-only
+    # and does not itself understand DST, so both offsets are listed; the
+    # job computes the real ET wall-clock date itself and is safe to fire
+    # twice near a DST transition (duplicate-send protection dedupes it).
+    - cron: "0 13 * * 1-5"   # 06:00 PDT (mid-Mar to early Nov)
+    - cron: "0 14 * * 1-5"   # 06:00 PST (rest of the year)
 
 jobs:
   scan:
@@ -180,6 +193,69 @@ jobs:
 
       - name: Upload result record as a workflow artifact
         if: steps.files.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: btock-results
+          path: results/
+          retention-days: 90
+
+  scan-scheduled:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Determine today's ET date and coverage file
+        id: today
+        run: |
+          set -eu
+          today_et=$(TZ="America/New_York" date +%F)
+          echo "date=$today_et" >> "$GITHUB_OUTPUT"
+          if [ -f "coverage/${today_et}.json" ]; then
+            echo "coverage_file=coverage/${today_et}.json" >> "$GITHUB_OUTPUT"
+          else
+            echo "coverage_file=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run orchestrator (real, non-test run)
+        env:
+          GMAIL_SENDER_ADDRESS: ${{ secrets.GMAIL_SENDER_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          set -eu
+          ARGS="--results-dir results --cache-dir ${RUNNER_TEMP}/btock-cache --ttl 900 --cutoff-et ${{ steps.today.outputs.date }}T09:00:00"
+          if [ -n "${{ steps.today.outputs.coverage_file }}" ]; then
+            ARGS="$ARGS --manual-coverage-file ${{ steps.today.outputs.coverage_file }}"
+            echo "Coverage file found: ${{ steps.today.outputs.coverage_file }}"
+          else
+            echo "No coverage/${{ steps.today.outputs.date }}.json -- sending honest 'scan unavailable' disclosure, no fabricated results"
+          fi
+          python scripts/orchestrate.py $ARGS
+
+      - name: Commit dated result record (durable storage)
+        run: |
+          set -eu
+          git config user.name "btock-cloud-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add results/
+          if ! git diff --cached --quiet; then
+            git commit -m "Btock cloud scan result $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          else
+            echo "No result changes to commit"
+          fi
+
+      - name: Upload result record as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: btock-results
