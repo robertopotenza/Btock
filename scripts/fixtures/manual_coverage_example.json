@@ -1,0 +1,33 @@
+{
+  "signed_in": true,
+  "pages_visited": 3,
+  "coverage_complete": true,
+  "oldest_seen_utc": "2026-09-24T21:30:00+00:00",
+  "inaccessible": ["https://seekingalpha.com/article/example-inaccessible"],
+  "articles": [
+    {
+      "url": "https://seekingalpha.com/article/aapl-buy-case",
+      "published_at": "2026-09-25T02:15:00+00:00",
+      "author": "Jane Analyst",
+      "sa_tickers": ["AAPL"],
+      "rating": "Buy",
+      "rating_verified": true
+    },
+    {
+      "url": "https://seekingalpha.com/article/brkb-strong-buy",
+      "published_at": "2026-09-25T05:40:00+00:00",
+      "author": "John Writer",
+      "sa_tickers": ["BRK.B"],
+      "rating": "Strong Buy",
+      "rating_verified": true
+    },
+    {
+      "url": "https://seekingalpha.com/article/msft-hold-case",
+      "published_at": "2026-09-25T06:00:00+00:00",
+      "author": "Someone Else",
+      "sa_tickers": ["MSFT"],
+      "rating": "Hold",
+      "rating_verified": true
+    }
+  ]
+}
