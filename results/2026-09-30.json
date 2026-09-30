@@ -1,0 +1,26 @@
+{
+  "run_id": "2026-09-30",
+  "cutoff_et": "2026-09-30T09:00:00-04:00",
+  "window_start_utc": "2026-09-29T22:00:00+00:00",
+  "window_end_utc": "2026-09-30T13:00:00+00:00",
+  "executed_at_utc": "2026-09-30T13:20:21.169969+00:00",
+  "coverage": {
+    "signed_in": false,
+    "articles": [],
+    "pages_visited": 0,
+    "coverage_complete": false,
+    "inaccessible": [],
+    "qualifying_tickers": {},
+    "error": "Neither --storage-state nor --manual-coverage-file was provided"
+  },
+  "sa_to_yahoo_map": {},
+  "btock_report": {
+    "results": {},
+    "errors": {},
+    "requested_tickers": []
+  },
+  "subject": "Seeking Alpha CLOUD \u2014 2026-09-30",
+  "recipient": "eng.potenza@gmail.com",
+  "email_body": "Window (America/New_York, [start, end)): [2026-09-29T18:00:00-04:00 , 2026-09-30T09:00:00-04:00) America/New_York ([2026-09-29T22:00:00+00:00 , 2026-09-30T13:00:00+00:00) UTC)\nRun identifier: 2026-09-30\n\n*** SEEKING ALPHA SCAN DID NOT RUN OR FAILED SIGN-IN CHECK ***\nReason: Neither --storage-state nor --manual-coverage-file was provided\nThe list below (if any) reflects manually supplied or partial data only.\nThis is NOT a verified 'no BUY matches' result.\n\nDeduplicated qualifying tickers (Buy/Strong Buy, article-specific): 0\n\nNo successful Btock BUY signals this run.\n",
+  "gmail_message_id": "<30a49418-a34e-4d05-ba7e-61f2976467ec@btock-cloud>"
+}
